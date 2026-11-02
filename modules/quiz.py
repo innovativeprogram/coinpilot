@@ -1,8 +1,11 @@
 """
 Quiz della Pazienza Finanziaria
 CoinPilot - Il tuo copilota per una finanza paziente
+Con salvataggio dei risultati per utente
 """
 import streamlit as st
+from datetime import datetime
+from modules.storage import AutoStorage
 
 
 class FinancialQuiz:
@@ -53,7 +56,16 @@ class FinancialQuiz:
 
     @staticmethod
     def should_show_quiz():
-        """Decide se mostrare il quiz (solo alla prima visita)"""
+        """Decide se mostrare il quiz (solo se non ci sono risultati salvati)"""
+        saved_results = AutoStorage.load_quiz_results()
+        
+        if saved_results:
+            # Carica i risultati salvati in session_state
+            st.session_state["investor_profile"] = saved_results["profile"]
+            st.session_state["quiz_score"] = saved_results["score"]
+            st.session_state["quiz_completed"] = True
+            return False
+        
         return not st.session_state.get("quiz_completed", False)
 
     @staticmethod
@@ -62,15 +74,23 @@ class FinancialQuiz:
         st.session_state["quiz_completed"] = True
         st.session_state["investor_profile"] = profile_name
         st.session_state["quiz_score"] = score
+        st.session_state["quiz_timestamp"] = datetime.now().isoformat()
+        
+        # Salva i risultati nel file specifico per l'utente
+        AutoStorage.save_quiz_results(profile_name, score)
 
     @staticmethod
     def reset_quiz():
-        """Resetta il quiz (utile per test o se l'utente vuole rifarlo)"""
+        """Resetta il quiz (permette di rifarlo)"""
         st.session_state["quiz_completed"] = False
+        AutoStorage.clear_quiz_results()
+        
         if "investor_profile" in st.session_state:
             del st.session_state["investor_profile"]
         if "quiz_score" in st.session_state:
             del st.session_state["quiz_score"]
+        if "quiz_timestamp" in st.session_state:
+            del st.session_state["quiz_timestamp"]
 
     @staticmethod
     def render():
