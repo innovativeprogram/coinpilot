@@ -1,7 +1,6 @@
 """
 CoinPilot - Pianificatore Finanziario Personale
 Con Dark Mode, FIRE Calculator, Inflation Simulator, Export PDF, Quiz facoltativo, Glossario e Cronologia mensile
-Salvataggio dati separato per ogni utente tramite cookie del browser
 """
 import streamlit as st
 import pandas as pd
@@ -22,7 +21,7 @@ from modules.budget import BudgetManager
 from modules.projections import FinancialProjections
 from modules.data_manager import DataManager
 from modules.ui_components import UIComponents
-from modules.storage import AutoStorage, get_user_id_from_component
+from modules.storage import AutoStorage
 from modules.welcome import WelcomeScreen
 from modules.quiz import FinancialQuiz
 from modules.history import HistoryManager
@@ -33,12 +32,6 @@ st.set_page_config(
     page_icon="🪙",
     layout="wide"
 )
-
-# ============================================================================
-# 0. INIZIALIZZAZIONE ID UTENTE (DEVE ESSERE PRIMA DI TUTTO)
-# ============================================================================
-# Questo renderizza il componente custom che legge/imposta il cookie
-user_id = get_user_id_from_component()
 
 # Inizializza gestori
 budget_manager = BudgetManager()
@@ -333,7 +326,7 @@ with tab6:
 # ============================================================================
 with tab7:
     st.subheader("📅 Cronologia Mensile")
-    st.markdown("Registra e monitora i tuoi dati finanziari mese per mese. I dati sono salvati separatamente per ogni utente.")
+    st.markdown("Registra e monitora i tuoi dati finanziari mese per mese.")
     st.markdown("---")
     
     col_form1, col_form2 = st.columns(2)
@@ -430,7 +423,7 @@ with tab7:
 
 with tab8:
     st.subheader("💾 Salva, carica ed esporta i tuoi dati")
-    st.info("💾 I tuoi dati sono salvati separatamente per ogni utente.")
+    st.info("💾 I tuoi dati sono salvati separatamente per ogni sessione utente.")
     
     col1, col2, col3 = st.columns(3)
     
