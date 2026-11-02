@@ -95,7 +95,8 @@ entrate = st.sidebar.number_input(
     "Entrate mensili nette (€)",
     min_value=0.0,
     value=float(default_entrate),
-    step=50.0
+    step=50.0,
+    format="%.2f"
 )
 
 st.sidebar.subheader("Spese mensili")
@@ -105,30 +106,39 @@ for categoria, default_val in default_spese.items():
         f"{categoria} (€)",
         min_value=0.0,
         value=float(default_val),
-        step=10.0
+        step=10.0,
+        format="%.2f"
     )
 
 st.sidebar.subheader("💼 Parametri investimento")
-tasso = st.sidebar.slider(
+
+# Slider tasso con display del valore percentuale
+tasso_percentuale = st.sidebar.slider(
     "Rendimento annuo stimato (%)",
     min_value=0.0,
     max_value=15.0,
-    value=float(default_tasso * 100),  # Converti da decimale a percentuale per lo slider
-    step=0.1
-) / 100  # Converti da percentuale a decimale per i calcoli
+    value=float(default_tasso * 100),
+    step=0.1,
+    format="%.1f%%"
+)
+tasso = tasso_percentuale / 100
 
+# Slider anni con display del valore
 anni = st.sidebar.slider(
     "Orizzonte temporale (anni)",
     min_value=1,
     max_value=40,
-    value=int(default_anni)
+    value=int(default_anni),
+    step=1,
+    format="%d anni"
 )
 
 capitale_iniziale = st.sidebar.number_input(
     "Capitale iniziale (€)",
     min_value=0.0,
     value=float(default_capitale),
-    step=100.0
+    step=100.0,
+    format="%.2f"
 )
 
 # Costruisci il dizionario inputs
@@ -265,7 +275,8 @@ with tab4:
         "Quanto vuoi risparmiare? (€)", 
         min_value=0.0, 
         value=10000.0, 
-        step=500.0
+        step=500.0,
+        format="%.2f"
     )
     
     if budget_data["risparmio_mensile"] > 0 and obiettivo > inputs["capitale_iniziale"]:
@@ -281,7 +292,7 @@ with tab4:
         ui.render_goal_timeline(timeline, obiettivo)
         
         # Messaggio finale con calcolo originale
-        mesi, anni = projections.calculate_months_to_goal(
+        mesi, anni_obj = projections.calculate_months_to_goal(
             obiettivo,
             inputs["capitale_iniziale"],
             budget_data["risparmio_mensile"],
@@ -290,7 +301,7 @@ with tab4:
         
         st.success(
             f"🎉 Raggiungerai **€ {obiettivo:,.2f}** in circa "
-            f"**{anni:.1f} anni** ({mesi} mesi)."
+            f"**{anni_obj:.1f} anni** ({mesi} mesi)."
         )
         
         # Suggerimento basato sulla pazienza finanziaria
