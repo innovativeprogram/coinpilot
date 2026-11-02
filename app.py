@@ -73,7 +73,8 @@ if saved_inputs:
     # Usa i dati salvati come valori di default
     default_entrate = saved_inputs.get("entrate", 2000.0)
     default_spese = saved_inputs.get("spese", budget_manager.default_spese)
-    default_tasso = saved_inputs.get("tasso", 5.0) / 100
+    # FIX: il tasso è già salvato in formato decimale (es. 0.05), non dividere per 100
+    default_tasso = saved_inputs.get("tasso", 0.05)
     default_anni = saved_inputs.get("anni", 10)
     default_capitale = saved_inputs.get("capitale_iniziale", 0.0)
     
@@ -83,7 +84,7 @@ else:
     # Usa i valori di default
     default_entrate = 2000.0
     default_spese = budget_manager.default_spese
-    default_tasso = 5.0 / 100
+    default_tasso = 0.05  # 5% in formato decimale
     default_anni = 10
     default_capitale = 0.0
 
@@ -112,9 +113,9 @@ tasso = st.sidebar.slider(
     "Rendimento annuo stimato (%)",
     min_value=0.0,
     max_value=15.0,
-    value=float(default_tasso * 100),
+    value=float(default_tasso * 100),  # Converti da decimale a percentuale per lo slider
     step=0.1
-) / 100
+) / 100  # Converti da percentuale a decimale per i calcoli
 
 anni = st.sidebar.slider(
     "Orizzonte temporale (anni)",
