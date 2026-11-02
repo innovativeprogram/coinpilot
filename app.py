@@ -73,7 +73,7 @@ if saved_inputs:
     # Usa i dati salvati come valori di default
     default_entrate = saved_inputs.get("entrate", 2000.0)
     default_spese = saved_inputs.get("spese", budget_manager.default_spese)
-    # FIX: il tasso è già salvato in formato decimale (es. 0.05), non dividere per 100
+    # Il tasso è già salvato in formato decimale (es. 0.05)
     default_tasso = saved_inputs.get("tasso", 0.05)
     default_anni = saved_inputs.get("anni", 10)
     default_capitale = saved_inputs.get("capitale_iniziale", 0.0)
@@ -112,25 +112,26 @@ for categoria, default_val in default_spese.items():
 
 st.sidebar.subheader("💼 Parametri investimento")
 
-# Slider tasso con display del valore percentuale
-tasso_percentuale = st.sidebar.slider(
+# FIX: Sostituito slider con number_input per vedere sempre il valore su mobile
+tasso_percentuale = st.sidebar.number_input(
     "Rendimento annuo stimato (%)",
     min_value=0.0,
     max_value=15.0,
     value=float(default_tasso * 100),
     step=0.1,
-    format="%.1f%%"
+    format="%.1f",
+    help="Inserisci il rendimento annuo atteso (es. 5.0 per 5%)"
 )
 tasso = tasso_percentuale / 100
 
-# Slider anni con display del valore
-anni = st.sidebar.slider(
+anni = st.sidebar.number_input(
     "Orizzonte temporale (anni)",
     min_value=1,
     max_value=40,
     value=int(default_anni),
     step=1,
-    format="%d anni"
+    format="%d",
+    help="Per quanti anni vuoi investire?"
 )
 
 capitale_iniziale = st.sidebar.number_input(
