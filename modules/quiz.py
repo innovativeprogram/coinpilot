@@ -61,7 +61,6 @@ class FinancialQuiz:
     @staticmethod
     def complete_quiz(profile_name, score):
         """Salva il risultato del quiz"""
-        st.session_state["quiz_completed"] = True
         st.session_state["investor_profile"] = profile_name
         st.session_state["quiz_score"] = score
         st.session_state["quiz_timestamp"] = datetime.now().isoformat()
@@ -71,7 +70,6 @@ class FinancialQuiz:
     @staticmethod
     def reset_quiz():
         """Resetta il quiz"""
-        st.session_state["quiz_completed"] = False
         AutoStorage.clear_quiz_results()
         
         if "investor_profile" in st.session_state:
@@ -130,7 +128,9 @@ class FinancialQuiz:
             
             if st.button("💾 Salva il mio profilo", type="primary", use_container_width=True):
                 FinancialQuiz.complete_quiz(profile, total_score)
-                st.session_state["show_quiz"] = False
+                # Resetta il flag del quiz
+                if "show_quiz" in st.session_state:
+                    del st.session_state["show_quiz"]
                 st.success(f"✅ Profilo salvato: {profile}")
                 st.rerun()
         else:
