@@ -120,3 +120,35 @@ class FinancialProjections:
         
         anni = mesi / 12
         return int(np.ceil(mesi)), anni
+    
+    def calculate_goal_timeline(self, obiettivo, capitale_iniziale, 
+                               risparmio_mensile, tasso_annuo, tappe_percentuali=None):
+        """
+        Calcola la timeline completa verso un obiettivo, con tappe intermedie
+        tappe_percentuali: lista di percentuali (es. [0.25, 0.5, 0.75, 1.0])
+        Restituisce una lista di dict con info su ogni tappa
+        """
+        if tappe_percentuali is None:
+            tappe_percentuali = [0.25, 0.5, 0.75, 1.0]
+        
+        timeline = []
+        
+        for perc in tappe_percentuali:
+            obiettivo_tappa = obiettivo * perc
+            mesi, anni = self.calculate_months_to_goal(
+                obiettivo_tappa,
+                capitale_iniziale,
+                risparmio_mensile,
+                tasso_annuo
+            )
+            
+            if mesi is not None:
+                timeline.append({
+                    "percentuale": perc,
+                    "obiettivo_tappa": obiettivo_tappa,
+                    "mesi": mesi,
+                    "anni": anni,
+                    "raggiunto": False  # verrà aggiornato in base al tempo attuale
+                })
+        
+        return timeline
