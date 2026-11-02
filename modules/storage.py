@@ -8,6 +8,12 @@ import uuid
 import streamlit as st
 import streamlit.components.v1 as components
 
+# Dichiara il componente una sola volta a livello di modulo
+_user_id_component = components.declare_component(
+    "local_storage",
+    path="components/local_storage"
+)
+
 
 class AutoStorage:
     """Gestisce il salvataggio automatico dei dati con separazione per utente"""
@@ -17,14 +23,10 @@ class AutoStorage:
         """Restituisce un ID utente univoco salvato in un cookie del browser"""
         if "user_id" not in st.session_state:
             # Usa il componente custom per ottenere l'ID dal cookie
-            user_id_component = components.declare_component(
-                "local_storage",
-                path="components/local_storage"
-            )
-            
-            user_id = user_id_component(key="user_id")
+            user_id = _user_id_component(key="user_id")
             
             if not user_id:
+                # Se il componente non ha ancora restituito un valore, genera un ID temporaneo
                 user_id = str(uuid.uuid4())[:12]
             
             st.session_state["user_id"] = user_id
