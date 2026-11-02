@@ -1,7 +1,6 @@
 """
-Quiz della Pazienza Finanziaria
+Quiz della Pazienza Finanziaria (FACOLTATIVO)
 CoinPilot - Il tuo copilota per una finanza paziente
-Con salvataggio dei risultati per utente
 """
 import streamlit as st
 from datetime import datetime
@@ -9,7 +8,7 @@ from modules.storage import AutoStorage
 
 
 class FinancialQuiz:
-    """Gestisce il quiz per scoprire il profilo dell'investitore"""
+    """Gestisce il quiz facoltativo per scoprire il profilo dell'investitore"""
     
     QUESTIONS = [
         {
@@ -56,17 +55,8 @@ class FinancialQuiz:
 
     @staticmethod
     def should_show_quiz():
-        """Decide se mostrare il quiz (solo se non ci sono risultati salvati)"""
-        saved_results = AutoStorage.load_quiz_results()
-        
-        if saved_results:
-            # Carica i risultati salvati in session_state
-            st.session_state["investor_profile"] = saved_results["profile"]
-            st.session_state["quiz_score"] = saved_results["score"]
-            st.session_state["quiz_completed"] = True
-            return False
-        
-        return not st.session_state.get("quiz_completed", False)
+        """Il quiz è facoltativo, quindi non viene mostrato automaticamente"""
+        return False
 
     @staticmethod
     def complete_quiz(profile_name, score):
@@ -76,12 +66,11 @@ class FinancialQuiz:
         st.session_state["quiz_score"] = score
         st.session_state["quiz_timestamp"] = datetime.now().isoformat()
         
-        # Salva i risultati nel file specifico per l'utente
         AutoStorage.save_quiz_results(profile_name, score)
 
     @staticmethod
     def reset_quiz():
-        """Resetta il quiz (permette di rifarlo)"""
+        """Resetta il quiz"""
         st.session_state["quiz_completed"] = False
         AutoStorage.clear_quiz_results()
         
@@ -97,7 +86,7 @@ class FinancialQuiz:
         """Renderizza l'interfaccia del quiz"""
         st.title("🧠 Quiz della Pazienza Finanziaria")
         st.markdown(
-            "Prima di iniziare il tuo viaggio con CoinPilot, scopriamo qual è il tuo profilo di investitore. "
+            "Scopri qual è il tuo profilo di investitore. "
             "Rispondi con sincerità: non ci sono risposte sbagliate, solo consapevolezza!"
         )
         st.markdown("---")
@@ -139,8 +128,9 @@ class FinancialQuiz:
             
             st.markdown("<br>", unsafe_allow_html=True)
             
-            if st.button("🚀 Inizia il tuo viaggio con CoinPilot", type="primary", use_container_width=True):
+            if st.button("💾 Salva il mio profilo", type="primary", use_container_width=True):
                 FinancialQuiz.complete_quiz(profile, total_score)
+                st.success(f"✅ Profilo salvato: {profile}")
                 st.rerun()
         else:
             st.warning("⚠️ Rispondi a tutte le domande per scoprire il tuo profilo!")
