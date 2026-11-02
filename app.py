@@ -1,6 +1,6 @@
 """
 CoinPilot - Pianificatore Finanziario Personale
-Con Dark Mode, FIRE Calculator, Inflation Simulator e Export PDF
+Con Dark Mode, FIRE Calculator, Inflation Simulator, Export PDF, Quiz e Glossario
 """
 import streamlit as st
 import pandas as pd
@@ -22,6 +22,7 @@ from modules.data_manager import DataManager
 from modules.ui_components import UIComponents
 from modules.storage import AutoStorage
 from modules.welcome import WelcomeScreen
+from modules.quiz import FinancialQuiz  # <-- NUOVO: Import del Quiz
 
 # Configurazione pagina
 st.set_page_config(
@@ -37,14 +38,21 @@ data_manager = DataManager()
 ui = UIComponents()
 
 # ============================================================================
-# SCHERMATA DI BENVENUTO
+# 1. SCHERMATA DI BENVENUTO
 # ============================================================================
 if WelcomeScreen.should_show_welcome():
     WelcomeScreen.render()
     st.stop()
 
 # ============================================================================
-# APP PRINCIPALE
+# 2. QUIZ DELLA PAZIENZA FINANZIARIA (NUOVO)
+# ============================================================================
+if FinancialQuiz.should_show_quiz():
+    FinancialQuiz.render()
+    st.stop()
+
+# ============================================================================
+# 3. APP PRINCIPALE
 # ============================================================================
 
 # Applica Dark Mode se attiva
@@ -55,6 +63,19 @@ AutoStorage.init_auto_save()
 saved_inputs = st.session_state.get("auto_save_inputs", None)
 
 ui.render_header()
+
+# Mostra il profilo dell'investitore in cima (se il quiz è stato completato)
+if st.session_state.get("investor_profile"):
+    st.markdown(
+        f"""
+        <div style="background-color: #E8F5E9; border-left: 4px solid #2ECC71; 
+                    padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+            <strong>🦉 Il tuo profilo:</strong> {st.session_state["investor_profile"]} 
+            <span style="float: right; cursor: pointer;" onclick="alert('Per rifare il quiz, vai nella tab Dati e clicca Reset')">ℹ️</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 st.markdown(
     """
@@ -126,7 +147,61 @@ with st.expander("📋 Riepilogo dati correnti", expanded=False):
         st.metric("Risparmio mensile", f"€ {budget_data['risparmio_mensile']:,.0f}")
         st.metric("Orizzonte", f"{anni} anni")
 
-# --- TABS principali ---
+# ============================================================================
+# MENU LATERALE: OBIETTIVI MULTIPLI E GLOSSARIO (NUOVI)
+# ============================================================================
+st.sidebar.markdown("---")
+
+# 4. OBIETTIVI MULTIPLI (Menu a tendina)
+with st.sidebar.expander("🎯 Obiettivi Multipli"):
+    if "multi_goals" not in st.session_state:
+        st.session_state["multi_goals"] = []
+    
+    with st.form("add_goal_form"):
+        goal_name = st.text_input("Nome obiettivo (es. Casa, Auto, Viaggio)")
+        goal_amount = st.number_input("Importo target (€)", min_value=100.0, step=100.0)
+        submitted = st.form_submit_button("➕ Aggiungi Obiettivo")
+        
+        if submitted and goal_name.strip():
+            st.session_state["multi_goals"].append({"nome": goal_name.strip(), "importo": float(goal_amount)})
+            st.success(f"✅ '{goal_name}' aggiunto!")
+            st.rerun()
+    
+    if st.session_state["multi_goals"]:
+        st.markdown("**I tuoi obiettivi:**")
+        for idx, goal in enumerate(st.session_state["multi_goals"]):
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write(f"• **{goal['nome']}**: € {goal['importo']:,.0f}")
+            with col2:
+                if st.button("🗑️", key=f"del_goal_{idx}"):
+                    st.session_state["multi_goals"].pop(idx)
+                    st.rerun()
+    else:
+        st.info("Nessun obiettivo aggiunto. Inizia a pianificare!")
+
+# 2. GLOSSARIO FINANZIARIO (Menu a tendina in fondo)
+with st.sidebar.expander("📚 Glossario Finanziario"):
+    st.markdown("""
+    **💰 Interesse Composto**  
+    Guadagnare interessi non solo sul capitale iniziale, ma anche sugli interessi accumulati nel tempo. Einstein lo chiamava "l'ottava meraviglia del mondo".
+
+    **📈 PAC (Piano di Accumulo)**  
+    Investire una cifra fissa a intervalli regolari (es. ogni mese), riducendo l'impatto della volatilità del mercato e sfruttando la media dei costi.
+
+    **🏦 ETF (Exchange Traded Fund)**  
+    Un fondo di investimento che replica un indice di mercato (es. S&P 500 o MSCI World), offrendo diversificazione immediata a costi bassissimi.
+
+    **🔥 FIRE**  
+    *Financial Independence, Retire Early*. La filosofia che punta ad accumulare un capitale sufficiente a vivere di rendita, liberando il proprio tempo.
+
+    **📉 Inflazione**  
+    L'aumento generale dei prezzi nel tempo, che riduce il potere d'acquisto del denaro. Per questo lasciare i soldi fermi è il rischio più grande.
+    """)
+
+# ============================================================================
+# TABS PRINCIPALI
+# ============================================================================
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "📈 Riepilogo", 
     "📊 Analisi Spese", 
@@ -186,9 +261,9 @@ with tab4:
     obiettivo = st.number_input("Quanto vuoi risparmiare? (€)", min_value=0.0, value=10000.0, step=500.0, format="%.2f")
     
     if budget_data["risparmio_mensile"] > 0 and obiettivo > inputs["capitale_iniziale"]:
-        timeline = projections.calculate_goal_timeline(obiettivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
+        timeline = projections.calculate_goal_timeline(objetivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
         ui.render_goal_timeline(timeline, obiettivo)
-        mesi, anni_obj = projections.calculate_months_to_goal(obiettivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
+        mesi, anni_obj = projections.calculate_months_to_goal(objetivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
         st.success(f"🎉 Raggiungerai **€ {obiettivo:,.2f}** in circa **{anni_obj:.1f} anni** ({mesi} mesi).")
         st.info("💡 *Ricorda: la costanza batte l'intensità. Piccoli risparmi mensili, moltiplicati dal tempo e dall'interesse composto, costruiscono la vera ricchezza.*")
     elif budget_data["risparmio_mensile"] <= 0:
@@ -197,7 +272,6 @@ with tab4:
     else:
         st.info("L'obiettivo è inferiore al capitale iniziale: l'hai già raggiunto! 🎉")
 
-# --- TAB 5: FIRE CALCULATOR (NUOVA) ---
 with tab5:
     spese_annuali = budget_data["totale_spese"] * 12
     risparmio_annuo = budget_data["risparmio_mensile"] * 12
@@ -209,7 +283,6 @@ with tab5:
         tasso_annuo=inputs["tasso"]
     )
 
-# --- TAB 6: INFLAZIONE (NUOVA) ---
 with tab6:
     inflazione_annua = st.number_input(
         "Tasso di inflazione annuo stimato (%)",
@@ -229,7 +302,6 @@ with tab6:
         inflazione_annua=inflazione_annua
     )
 
-# --- TAB 7: DATI ---
 with tab7:
     st.subheader("💾 Salva, carica ed esporta i tuoi dati")
     st.info("💾 I tuoi dati vengono salvati automaticamente ad ogni modifica")
@@ -274,7 +346,6 @@ with tab7:
     
     st.markdown("---")
     
-    # EXPORT PDF (NUOVO)
     st.markdown("#### 📄 Esporta Report PDF")
     st.markdown("Scarica un report completo del tuo piano finanziario")
     
@@ -283,19 +354,16 @@ with tab7:
             pdf = FPDF()
             pdf.add_page()
             
-            # Header
             pdf.set_font("Helvetica", "B", 24)
             pdf.set_text_color(184, 134, 11)
             pdf.cell(0, 15, "CoinPilot - Report Finanziario", ln=True, align="C")
             pdf.ln(5)
             
-            # Data
             pdf.set_font("Helvetica", "", 10)
             pdf.set_text_color(100, 100, 100)
             pdf.cell(0, 8, f"Generato il {datetime.now().strftime('%d/%m/%Y alle %H:%M')}", ln=True, align="C")
             pdf.ln(10)
             
-            # Sezione Riepilogo
             pdf.set_font("Helvetica", "B", 16)
             pdf.set_text_color(44, 62, 80)
             pdf.cell(0, 12, "1. RIEPILOGO FINANZIARIO", ln=True)
@@ -315,7 +383,6 @@ with tab7:
             pdf.cell(0, 8, f"EUR {inputs['capitale_iniziale']:,.2f}", ln=True)
             pdf.ln(8)
             
-            # Sezione Proiezione
             pdf.set_font("Helvetica", "B", 16)
             pdf.cell(0, 12, "2. PROIEZIONE A " + str(inputs["anni"]) + " ANNI", ln=True)
             pdf.ln(3)
@@ -329,9 +396,8 @@ with tab7:
             pdf.cell(0, 8, f"EUR {interessi_totali:,.2f}", ln=True)
             pdf.ln(8)
             
-            # Sezione FIRE
-            spese_annuali = budget_data["totale_spese"] * 12
-            capitale_fire = spese_annuali / 0.04
+            spese_annuali_pdf = budget_data["totale_spese"] * 12
+            capitale_fire = spese_annuali_pdf / 0.04
             
             pdf.set_font("Helvetica", "B", 16)
             pdf.cell(0, 12, "3. ANALISI FIRE (Indipendenza Finanziaria)", ln=True)
@@ -341,21 +407,18 @@ with tab7:
             pdf.cell(90, 8, "Numero FIRE (capitale necessario):")
             pdf.cell(0, 8, f"EUR {capitale_fire:,.2f}", ln=True)
             pdf.cell(90, 8, "Spese annuali:")
-            pdf.cell(0, 8, f"EUR {spese_annuali:,.2f}", ln=True)
+            pdf.cell(0, 8, f"EUR {spese_annuali_pdf:,.2f}", ln=True)
             pdf.ln(8)
             
-            # Footer
             pdf.ln(10)
             pdf.set_font("Helvetica", "I", 9)
             pdf.set_text_color(150, 150, 150)
             pdf.cell(0, 8, "Report generato da CoinPilot - Il tuo copilota per una finanza paziente", ln=True, align="C")
             pdf.cell(0, 8, "Ispirato a 'L'Arte della Pazienza Finanziaria' di Canio Tedesco", ln=True, align="C")
             
-            # Salva PDF
             pdf_path = "data/coinpilot_report.pdf"
             pdf.output(pdf_path)
             
-            # Offri il download
             with open(pdf_path, "rb") as f:
                 st.download_button(
                     label="⬇️ Scarica il tuo Report PDF",
@@ -387,13 +450,13 @@ with tab7:
         st.rerun()
     
     st.markdown("---")
-    st.markdown("#### Mostra di nuovo la schermata di benvenuto")
-    if st.button("👋 Rivedi welcome page", use_container_width=True):
+    st.markdown("#### Mostra di nuovo la schermata di benvenuto e il Quiz")
+    if st.button("👋 Rivedi welcome page e Quiz", use_container_width=True):
         WelcomeScreen.reset_welcome()
-        st.success("✅ Welcome page resettata! Ricarica la pagina per vederla di nuovo.")
+        FinancialQuiz.reset_quiz()  # <-- NUOVO: Resetta anche il quiz
+        st.success("✅ Welcome page e Quiz resettati! Ricarica la pagina per vederli di nuovo.")
         st.rerun()
 
-# --- TAB 8: IL LIBRO ---
 with tab8:
     ui.render_book_presentation()
 
