@@ -1,24 +1,55 @@
 """
 Componenti UI riutilizzabili per Streamlit
 CoinPilot - Il tuo copilota per una finanza paziente
-Versione responsive ottimizzata per mobile
+Versione con Dark Mode, FIRE Calculator e Inflation Simulator
 """
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
+import numpy as np
 
 
 class UIComponents:
     """Componenti UI riutilizzabili"""
 
-    # Palette colori del brand CoinPilot
-    COLOR_PRIMARY = "#B8860B"      # Oro
-    COLOR_SUCCESS = "#2ECC71"      # Verde
-    COLOR_ERROR = "#E74C3C"        # Rosso
-    COLOR_INFO = "#3498DB"         # Blu
-    COLOR_NEUTRAL = "#95A5A6"      # Grigio
-    COLOR_MILESTONE = "#F39C12"    # Arancio
+    COLOR_PRIMARY = "#B8860B"
+    COLOR_SUCCESS = "#2ECC71"
+    COLOR_ERROR = "#E74C3C"
+    COLOR_INFO = "#3498DB"
+    COLOR_NEUTRAL = "#95A5A6"
+    COLOR_MILESTONE = "#F39C12"
+
+    # ------------------------------------------------------------------
+    # DARK MODE TOGGLE
+    # ------------------------------------------------------------------
+    @staticmethod
+    def render_dark_mode_toggle():
+        """Renderizza il pulsante per attivare/disattivare la dark mode"""
+        if "dark_mode" not in st.session_state:
+            st.session_state["dark_mode"] = False
+        
+        col1, col2 = st.columns([10, 1])
+        with col2:
+            dark_mode = st.toggle("🌙", value=st.session_state["dark_mode"], key="dark_mode_toggle")
+            if dark_mode != st.session_state["dark_mode"]:
+                st.session_state["dark_mode"] = dark_mode
+                st.rerun()
+        
+        return st.session_state["dark_mode"]
+
+    @staticmethod
+    def apply_dark_mode(is_dark):
+        """Applica il tema scuro se attivo"""
+        if is_dark:
+            st.markdown(
+                """
+                <script>
+                document.body.classList.add('dark-mode');
+                </script>
+                """,
+                unsafe_allow_html=True
+            )
 
     # ------------------------------------------------------------------
     # HEADER E FOOTER
@@ -102,38 +133,31 @@ class UIComponents:
         }
 
     # ------------------------------------------------------------------
-    # METRICHE (RESPONSIVE)
+    # METRICHE
     # ------------------------------------------------------------------
     @staticmethod
     def render_metrics(budget_data):
-        """Renderizza le metriche principali con layout responsive"""
-        is_mobile = UIComponents.is_mobile()
-        
-        if is_mobile:
-            row1_col1, row1_col2 = st.columns(2)
-            row2_col1, row2_col2 = st.columns(2)
-            
-            perc_spese = (
-                budget_data["totale_spese"] / budget_data["entrate"] * 100
-                if budget_data["entrate"] > 0 else 0
-            )
-            
-            with row1_col1:
-                st.metric("Entrate", f"€ {budget_data['entrate']:,.0f}")
-            with row1_col2:
-                st.metric("Spese", f"€ {budget_data['totale_spese']:,.0f}", delta=f"{perc_spese:.0f}%", delta_color="inverse")
-            with row2_col1:
-                st.metric("Risparmio", f"€ {budget_data['risparmio_mensile']:,.0f}", delta=f"{budget_data['percentuale_risparmio']:.0f}%")
-            with row2_col2:
-                st.metric("Annuo", f"€ {budget_data['risparmio_annuo']:,.0f}")
-        else:
-            col1, col2, col3, col4 = st.columns(4)
-            perc_spese = (budget_data["totale_spese"] / budget_data["entrate"] * 100 if budget_data["entrate"] > 0 else 0)
+        """Renderizza le metriche principali"""
+        col1, col2, col3, col4 = st.columns(4)
 
-            col1.metric("Entrate", f"€ {budget_data['entrate']:,.2f}")
-            col2.metric("Spese", f"€ {budget_data['totale_spese']:,.2f}", delta=f"{perc_spese:.1f}% entrate", delta_color="inverse")
-            col3.metric("Risparmio mensile", f"€ {budget_data['risparmio_mensile']:,.2f}", delta=f"{budget_data['percentuale_risparmio']:.1f}%")
-            col4.metric("Risparmio annuo", f"€ {budget_data['risparmio_annuo']:,.2f}")
+        perc_spese = (
+            budget_data["totale_spese"] / budget_data["entrate"] * 100
+            if budget_data["entrate"] > 0 else 0
+        )
+
+        col1.metric("Entrate", f"€ {budget_data['entrate']:,.2f}")
+        col2.metric(
+            "Spese",
+            f"€ {budget_data['totale_spese']:,.2f}",
+            delta=f"{perc_spese:.1f}% entrate",
+            delta_color="inverse"
+        )
+        col3.metric(
+            "Risparmio mensile",
+            f"€ {budget_data['risparmio_mensile']:,.2f}",
+            delta=f"{budget_data['percentuale_risparmio']:.1f}%"
+        )
+        col4.metric("Risparmio annuo", f"€ {budget_data['risparmio_annuo']:,.2f}")
 
     # ------------------------------------------------------------------
     # GRAFICI BASE
@@ -141,16 +165,33 @@ class UIComponents:
     @staticmethod
     def render_pie_chart(spese_dict):
         """Renderizza il grafico a torta delle spese"""
-        df = pd.DataFrame({"Categoria": list(spese_dict.keys()), "Importo (€)": list(spese_dict.values())})
+        df = pd.DataFrame({
+            "Categoria": list(spese_dict.keys()),
+            "Importo (€)": list(spese_dict.values())
+        })
         df = df[df["Importo (€)"] > 0]
 
         if df.empty:
             st.info("Nessuna spesa inserita.")
             return
 
-        fig = px.pie(df, values="Importo (€)", names="Categoria", hole=0.45, color_discrete_sequence=px.colors.qualitative.Set2)
-        fig.update_traces(textposition="inside", textinfo="percent+label", hovertemplate="<b>%{label}</b><br>€ %{value:,.2f}<br>%{percent}<extra></extra>")
-        fig.update_layout(plot_bgcolor="white", paper_bgcolor="white", margin=dict(t=20, b=20, l=20, r=20), height=400)
+        fig = px.pie(
+            df,
+            values="Importo (€)",
+            names="Categoria",
+            hole=0.45,
+            color_discrete_sequence=px.colors.qualitative.Set2
+        )
+        fig.update_traces(
+            textposition="inside",
+            textinfo="percent+label",
+            hovertemplate="<b>%{label}</b><br>€ %{value:,.2f}<br>%{percent}<extra></extra>"
+        )
+        fig.update_layout(
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            margin=dict(t=20, b=20, l=20, r=20)
+        )
         st.plotly_chart(fig, use_container_width=True)
 
     @staticmethod
@@ -158,14 +199,34 @@ class UIComponents:
         """Renderizza il grafico a barre entrate vs spese"""
         df = pd.DataFrame({
             "Voce": ["Entrate", "Spese", "Risparmio"],
-            "Importo (€)": [budget_data["entrate"], budget_data["totale_spese"], max(budget_data["risparmio_mensile"], 0.0)]
+            "Importo (€)": [
+                budget_data["entrate"],
+                budget_data["totale_spese"],
+                max(budget_data["risparmio_mensile"], 0.0)
+            ]
         })
 
-        fig = px.bar(df, x="Voce", y="Importo (€)", color="Voce", text_auto=",.0f", color_discrete_map={
-            "Entrate": UIComponents.COLOR_SUCCESS, "Spese": UIComponents.COLOR_ERROR, "Risparmio": UIComponents.COLOR_INFO
-        })
-        fig.update_traces(hovertemplate="<b>%{x}</b><br>€ %{y:,.2f}<extra></extra>")
-        fig.update_layout(plot_bgcolor="white", paper_bgcolor="white", showlegend=False, margin=dict(t=20, b=20, l=20, r=20), height=400)
+        fig = px.bar(
+            df,
+            x="Voce",
+            y="Importo (€)",
+            color="Voce",
+            text_auto=",.0f",
+            color_discrete_map={
+                "Entrate": UIComponents.COLOR_SUCCESS,
+                "Spese": UIComponents.COLOR_ERROR,
+                "Risparmio": UIComponents.COLOR_INFO
+            }
+        )
+        fig.update_traces(
+            hovertemplate="<b>%{x}</b><br>€ %{y:,.2f}<extra></extra>"
+        )
+        fig.update_layout(
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            showlegend=False,
+            margin=dict(t=20, b=20, l=20, r=20)
+        )
         fig.update_yaxes(tickformat="€,.0f", gridcolor="LightGrey")
         st.plotly_chart(fig, use_container_width=True)
 
@@ -176,17 +237,51 @@ class UIComponents:
     def render_multi_scenario_chart(df_multi, milestones=None):
         """Renderizza il grafico con 3 scenari e traguardi"""
         fig = go.Figure()
-        colori = {"Pessimistico": UIComponents.COLOR_ERROR, "Realistico": UIComponents.COLOR_INFO, "Ottimistico": UIComponents.COLOR_SUCCESS}
 
-        fig.add_trace(go.Scatter(x=df_multi["Mese"], y=df_multi["Ottimistico"], line=dict(width=0), showlegend=False, hoverinfo="skip"))
-        fig.add_trace(go.Scatter(x=df_multi["Mese"], y=df_multi["Pessimistico"], fill="tonexty", fillcolor="rgba(52, 152, 219, 0.10)", line=dict(width=0), name="Area di incertezza", hoverinfo="skip"))
-        fig.add_trace(go.Scatter(x=df_multi["Mese"], y=df_multi["Solo versato"], name="Solo versato", line=dict(color=UIComponents.COLOR_NEUTRAL, width=2, dash="dash"), hovertemplate="Solo versato: € %{y:,.0f}<extra></extra>"))
+        colori = {
+            "Pessimistico": UIComponents.COLOR_ERROR,
+            "Realistico": UIComponents.COLOR_INFO,
+            "Ottimistico": UIComponents.COLOR_SUCCESS
+        }
+
+        fig.add_trace(go.Scatter(
+            x=df_multi["Mese"],
+            y=df_multi["Ottimistico"],
+            line=dict(width=0),
+            showlegend=False,
+            hoverinfo="skip"
+        ))
+        fig.add_trace(go.Scatter(
+            x=df_multi["Mese"],
+            y=df_multi["Pessimistico"],
+            fill="tonexty",
+            fillcolor="rgba(52, 152, 219, 0.10)",
+            line=dict(width=0),
+            name="Area di incertezza",
+            hoverinfo="skip"
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=df_multi["Mese"],
+            y=df_multi["Solo versato"],
+            name="Solo versato",
+            line=dict(color=UIComponents.COLOR_NEUTRAL, width=2, dash="dash"),
+            hovertemplate="Solo versato: € %{y:,.0f}<extra></extra>"
+        ))
 
         for scenario in ["Pessimistico", "Realistico", "Ottimistico"]:
-            fig.add_trace(go.Scatter(x=df_multi["Mese"], y=df_multi[scenario], name=scenario, line=dict(color=colori[scenario], width=3), hovertemplate=f"{scenario}: € %{{y:,.0f}}<extra></extra>"))
+            fig.add_trace(go.Scatter(
+                x=df_multi["Mese"],
+                y=df_multi[scenario],
+                name=scenario,
+                line=dict(color=colori[scenario], width=3),
+                hovertemplate=f"{scenario}: € %{{y:,.0f}}<extra></extra>"
+            ))
 
         if milestones:
-            mesi_x, valori_y, testi = [], [], []
+            mesi_x = []
+            valori_y = []
+            testi = []
             for m in milestones:
                 idx = int(m["mese"])
                 if idx < len(df_multi):
@@ -195,11 +290,44 @@ class UIComponents:
                     testi.append(f"€ {m['traguardo']:,.0f}")
 
             if mesi_x:
-                fig.add_trace(go.Scatter(x=mesi_x, y=valori_y, mode="markers+text", marker=dict(size=14, color=UIComponents.COLOR_MILESTONE, symbol="star", line=dict(width=1, color="white")), text=testi, textposition="top center", textfont=dict(size=10, color=UIComponents.COLOR_PRIMARY), name="Traguardi", hovertemplate="Traguardo %{text}<br>Mese %{x}<extra></extra>"))
+                fig.add_trace(go.Scatter(
+                    x=mesi_x,
+                    y=valori_y,
+                    mode="markers+text",
+                    marker=dict(
+                        size=14,
+                        color=UIComponents.COLOR_MILESTONE,
+                        symbol="star",
+                        line=dict(width=1, color="white")
+                    ),
+                    text=testi,
+                    textposition="top center",
+                    textfont=dict(size=10, color=UIComponents.COLOR_PRIMARY),
+                    name="Traguardi",
+                    hovertemplate="Traguardo %{text}<br>Mese %{x}<extra></extra>"
+                ))
 
-        fig.update_layout(title="Proiezione Multi-Scenario", xaxis_title="Mesi", yaxis_title="Capitale (€)", hovermode="x unified", legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1), plot_bgcolor="white", paper_bgcolor="white", font=dict(size=12), margin=dict(t=60, b=40, l=20, r=20), height=500)
+        fig.update_layout(
+            title="Proiezione Multi-Scenario",
+            xaxis_title="Mesi",
+            yaxis_title="Capitale (€)",
+            hovermode="x unified",
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            ),
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            font=dict(size=12),
+            margin=dict(t=60, b=40, l=20, r=20)
+        )
+
         fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="LightGrey")
         fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="LightGrey", tickformat="€,.0f")
+
         st.plotly_chart(fig, use_container_width=True)
 
     # ------------------------------------------------------------------
@@ -208,52 +336,85 @@ class UIComponents:
     @staticmethod
     def render_annual_table(df_annuale):
         """Renderizza la tabella riassuntiva annuale"""
-        st.dataframe(df_annuale[["Anno", "Capitale", "Versato", "Interessi"]].style.format({"Capitale": "€ {:,.2f}", "Versato": "€ {:,.2f}", "Interessi": "€ {:,.2f}"}), use_container_width=True, hide_index=True)
+        st.dataframe(
+            df_annuale[["Anno", "Capitale", "Versato", "Interessi"]]
+            .style.format({
+                "Capitale": "€ {:,.2f}",
+                "Versato": "€ {:,.2f}",
+                "Interessi": "€ {:,.2f}"
+            }),
+            use_container_width=True,
+            hide_index=True
+        )
 
     # ------------------------------------------------------------------
     # TIMELINE OBIETTIVI
     # ------------------------------------------------------------------
     @staticmethod
     def render_goal_timeline(timeline, obiettivo):
-        """Renderizza una timeline visuale con tappe intermedie verso l'obiettivo"""
+        """Renderizza una timeline visuale con tappe intermedie"""
         if not timeline:
             st.info("Nessuna tappa calcolata.")
             return
 
         st.markdown("#### 📊 Progresso verso l'obiettivo")
+        
         progress_html = f"""
         <div style="background-color: #f0f0f0; border-radius: 10px; padding: 5px; margin: 20px 0;">
             <div style="background: linear-gradient(90deg, {UIComponents.COLOR_PRIMARY} 0%, {UIComponents.COLOR_SUCCESS} 100%); 
-                        height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+                        height: 30px; border-radius: 8px; 
+                        display: flex; align-items: center; justify-content: center;
                         color: white; font-weight: bold; font-size: 14px;">
                 Obiettivo: € {obiettivo:,.0f}
             </div>
         </div>
         """
         st.markdown(progress_html, unsafe_allow_html=True)
+
         st.markdown("#### 🎯 Tappe intermedie")
         
-        is_mobile = UIComponents.is_mobile()
-        cols = st.columns(2) if is_mobile else st.columns(len(timeline))
+        cols = st.columns(len(timeline))
         
         for i, tappa in enumerate(timeline):
-            if i < len(cols):
-                with cols[i]:
-                    icon = "🏆" if tappa["percentuale"] == 1.0 else "🎯" if tappa["percentuale"] >= 0.75 else "⭐" if tappa["percentuale"] >= 0.5 else "📍"
-                    color = UIComponents.COLOR_MILESTONE if tappa["percentuale"] == 1.0 else UIComponents.COLOR_SUCCESS if tappa["percentuale"] >= 0.75 else UIComponents.COLOR_INFO if tappa["percentuale"] >= 0.5 else UIComponents.COLOR_NEUTRAL
+            with cols[i]:
+                if tappa["percentuale"] == 1.0:
+                    icon = "🏆"
+                    color = UIComponents.COLOR_MILESTONE
+                elif tappa["percentuale"] >= 0.75:
+                    icon = "🎯"
+                    color = UIComponents.COLOR_SUCCESS
+                elif tappa["percentuale"] >= 0.5:
+                    icon = "⭐"
+                    color = UIComponents.COLOR_INFO
+                else:
+                    icon = "📍"
+                    color = UIComponents.COLOR_NEUTRAL
 
-                    card_html = f"""
-                    <div style="background-color: white; border: 2px solid {color}; border-radius: 15px; padding: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                        <div style="font-size: 32px; margin-bottom: 10px;">{icon}</div>
-                        <div style="font-size: 18px; font-weight: bold; color: {color}; margin-bottom: 5px;">{tappa['percentuale']*100:.0f}%</div>
-                        <div style="font-size: 14px; color: #666; margin-bottom: 10px;">€ {tappa['obiettivo_tappa']:,.0f}</div>
-                        <div style="font-size: 12px; color: #999;">{tappa['anni']:.1f} anni<br>({tappa['mesi']} mesi)</div>
+                card_html = f"""
+                <div style="background-color: white; border: 2px solid {color}; 
+                            border-radius: 15px; padding: 15px; text-align: center;
+                            box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div style="font-size: 32px; margin-bottom: 10px;">{icon}</div>
+                    <div style="font-size: 18px; font-weight: bold; color: {color}; 
+                                margin-bottom: 5px;">
+                        {tappa['percentuale']*100:.0f}%
                     </div>
-                    """
-                    st.markdown(card_html, unsafe_allow_html=True)
+                    <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                        € {tappa['obiettivo_tappa']:,.0f}
+                    </div>
+                    <div style="font-size: 12px; color: #999;">
+                        {tappa['anni']:.1f} anni<br>
+                        ({tappa['mesi']} mesi)
+                    </div>
+                </div>
+                """
+                st.markdown(card_html, unsafe_allow_html=True)
 
         st.markdown("---")
-        st.success(f"💪 Mantieni la costanza! Con il tuo risparmio mensile, raggiungerai **€ {obiettivo:,.0f}** in **{timeline[-1]['anni']:.1f} anni**.")
+        st.success(
+            f"💪 Mantieni la costanza! Con il tuo risparmio mensile, "
+            f"raggiungerai **€ {obiettivo:,.0f}** in **{timeline[-1]['anni']:.1f} anni**."
+        )
 
     # ------------------------------------------------------------------
     # PRESENTAZIONE LIBRO
@@ -276,7 +437,6 @@ class UIComponents:
                     <div style="background-color: #F0F0F0; border-radius: 15px; padding: 40px 20px; text-align: center; border: 2px dashed #B8860B;">
                         <div style="font-size: 60px; margin-bottom: 15px;">📚</div>
                         <div style="font-size: 18px; font-weight: bold; color: #2C3E50;">L'Arte della Pazienza Finanziaria</div>
-                        <div style="font-size: 12px; color: #666; margin-top: 10px;">(Carica 'cover.jpg' nella cartella 'assets' del repository per vedere la copertina)</div>
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -286,19 +446,15 @@ class UIComponents:
             st.markdown("""
             Quante volte hai rinunciato a investire perché ti sentivi sopraffatto? O hai preso decisioni finanziarie sbagliate per colpa dell'ansia o dell'entusiasmo del momento? 
             
-            La verità è che il tuo peggior nemico non è il mercato, ma la tua psicologia. La paura di perdere, l'avidità e la FOMO sono le vere trappole che ti fanno perdere soldi. Per anni ho guardato l'estratto conto con una domanda che mi bruciava dentro: *"Perché nessuno mi ha mai insegnato a gestire i miei soldi?"*. 
-            
-            Da quel momento è iniziato un viaggio, fatto di studi, errori e scoperte, che mi ha portato a trovare un metodo semplice ed efficace per investire con serenità.
+            La verità è che il tuo peggior nemico non è il mercato, ma la tua psicologia. La paura di perdere, l'avidità e la FOMO sono le vere trappole che ti fanno perdere soldi.
             """)
             
             st.markdown("""
-            **"L'Arte della Pazienza Finanziaria"** non è l'ennesimo manuale di "fuffa guru" e non promette ricchezze facili. È un percorso passo dopo passo che parte dal risparmio consapevole e ti guida fino al PAC su ETF, con un linguaggio chiaro, onesto e accessibile a tutti. 
-            
-            Non servono formule matematiche complicate o una laurea in economia: serve solo la capacità di essere coerenti e la disciplina di non farsi sabotare dalle proprie emozioni. Ho raccolto in queste pagine tutto ciò che avrei voluto sapere quando ho iniziato.
+            **"L'Arte della Pazienza Finanziaria"** non è l'ennesimo manuale di "fuffa guru" e non promette ricchezze facili. È un percorso passo dopo passo che parte dal risparmio consapevole e ti guida fino al PAC su ETF, con un linguaggio chiaro, onesto e accessibile a tutti.
             """)
             
             st.markdown("""
-            Se stai cercando un modo per diventare ricco in un giorno, questo libro non fa per te. Ma se vuoi costruire un rapporto più sereno con i tuoi risparmi, proteggere il tuo futuro dall'inflazione e imparare a investire con logica, allora questo è il tuo compagno di viaggio ideale. 
+            Se stai cercando un modo per diventare ricco in un giorno, questo libro non fa per te. Ma se vuoi costruire un rapporto più sereno con i tuoi risparmi, proteggere il tuo futuro dall'inflazione e imparare a investire con logica, allora questo è il tuo compagno di viaggio ideale.
             
             *Perché l'educazione finanziaria non è un lusso per pochi esperti, ma un diritto di tutti.*
             """)
@@ -307,11 +463,191 @@ class UIComponents:
             st.link_button("🛒 Acquista su Amazon", "https://link.amazon/B07tC2LqG", use_container_width=True)
 
     # ------------------------------------------------------------------
-    # UTILS
+    # CALCOLATORE FIRE (NUOVO)
     # ------------------------------------------------------------------
     @staticmethod
-    def is_mobile():
-        """Rileva se l'utente sta usando un dispositivo mobile (semplificato)"""
-        if "is_mobile" not in st.session_state:
-            st.session_state["is_mobile"] = False
-        return st.session_state.get("is_mobile", False)
+    def render_fire_calculator(spese_annuali, capitale_attuale, risparmio_annuo, tasso_annuo):
+        """
+        Calcola quando l'utente può raggiungere l'indipendenza finanziaria
+        usando la Regola del 4%
+        """
+        st.markdown("### 🔥 Calcolatore FIRE")
+        st.markdown("*Financial Independence, Retire Early - La regola del 4%*")
+        st.markdown("---")
+        
+        # Capitale FIRE necessario
+        capitale_fire = spese_annuali / 0.04
+        
+        st.markdown(f"#### 🎯 Il tuo numero FIRE: **€ {capitale_fire:,.0f}**")
+        st.markdown(
+            f"Secondo la **Regola del 4%**, hai bisogno di **€ {capitale_fire:,.0f}** "
+            f"investiti per vivere di rendita prelevando il 4% all'anno "
+            f"(€ {spese_annuali:,.0f}/anno) senza erodere il capitale."
+        )
+        
+        st.markdown("---")
+        
+        # Calcola anni per raggiungere FIRE
+        if risparmio_annuo > 0 and capitale_attuale < capitale_fire:
+            anni_per_fire = 0
+            capitale_simulato = capitale_attuale
+            capitale_list = [capitale_attuale]
+            anni_list = [0]
+            
+            while capitale_simulato < capitale_fire and anni_per_fire < 100:
+                capitale_simulato = capitale_simulato * (1 + tasso_annuo) + risparmio_annuo
+                anni_per_fire += 1
+                capitale_list.append(capitale_simulato)
+                anni_list.append(anni_per_fire)
+            
+            st.success(
+                f"🎉 Con un risparmio annuo di **€ {risparmio_annuo:,.0f}** e un rendimento del **{tasso_annuo*100:.1f}%**, "
+                f"raggiungerai la libertà finanziaria in **{anni_per_fire} anni**!"
+            )
+            
+            # Grafico percorso verso FIRE
+            df_fire = pd.DataFrame({
+                "Anno": anni_list,
+                "Capitale": capitale_list
+            })
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=df_fire["Anno"],
+                y=df_fire["Capitale"],
+                mode="lines+markers",
+                name="Il tuo capitale",
+                line=dict(color=UIComponents.COLOR_PRIMARY, width=3)
+            ))
+            fig.add_hline(
+                y=capitale_fire,
+                line_dash="dash",
+                line_color=UIComponents.COLOR_SUCCESS,
+                annotation_text=f"🎯 FIRE: € {capitale_fire:,.0f}",
+                annotation_position="top left"
+            )
+            fig.update_layout(
+                title="Percorso verso la libertà finanziaria",
+                xaxis_title="Anni",
+                yaxis_title="Capitale (€)",
+                plot_bgcolor="white",
+                paper_bgcolor="white",
+                yaxis_tickformat="€,.0f"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+        elif capitale_attuale >= capitale_fire:
+            st.balloons()
+            st.success(
+                f"🏆 **HAI GIÀ RAGGIUNTO LA LIBERTÀ FINANZIARIA!** "
+                f"Il tuo capitale attuale (€ {capitale_attuale:,.0f}) supera il tuo numero FIRE (€ {capitale_fire:,.0f}). "
+                f"Sei ufficialmente libero!"
+            )
+        else:
+            st.warning("⚠️ Con un risparmio annuo pari o inferiore a zero, non puoi raggiungere la FIRE.")
+        
+        st.markdown("---")
+        st.info(
+            "💡 **La Regola del 4%**: Studi storici mostrano che prelevare il 4% all'anno "
+            "da un portafoglio bilanciato (azioni/obbligazioni) permette di non erodere il capitale "
+            "per almeno 30 anni. È la base matematica del movimento FIRE."
+        )
+
+    # ------------------------------------------------------------------
+    # SIMULATORE INFLAZIONE (NUOVO)
+    # ------------------------------------------------------------------
+    @staticmethod
+    def render_inflation_simulator(capitale_iniziale, risparmio_mensile, tasso_annuo, anni, inflazione_annua=0.025):
+        """
+        Simula l'effetto dell'inflazione sul potere d'acquisto
+        """
+        st.markdown("### 📉 Simulatore di Inflazione")
+        st.markdown("*Quanto varranno davvero i tuoi soldi tra qualche anno?*")
+        st.markdown("---")
+        
+        mesi = np.arange(anni * 12 + 1)
+        tasso_mensile = (1 + tasso_annuo) ** (1/12) - 1
+        inflazione_mensile = (1 + inflazione_annua) ** (1/12) - 1
+        
+        # Capitale nominale (senza inflazione)
+        if risparmio_mensile > 0 and tasso_mensile > 0:
+            capitale_nominale = (capitale_iniziale * (1 + tasso_mensile) ** mesi + 
+                                risparmio_mensile * (((1 + tasso_mensile) ** mesi - 1) / tasso_mensile))
+        else:
+            capitale_nominale = capitale_iniziale + risparmio_mensile * mesi
+        
+        # Capitale reale (aggiustato per inflazione)
+        fattore_inflazione = (1 + inflazione_mensile) ** mesi
+        capitale_reale = capitale_nominale / fattore_inflazione
+        
+        df_inflazione = pd.DataFrame({
+            "Mese": mesi,
+            "Capitale Nominale (€)": capitale_nominale,
+            "Capitale Reale (€)": capitale_reale,
+            "Potere d'acquisto (%)": (capitale_reale / capitale_nominale) * 100
+        })
+        
+        # Grafico comparativo
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=df_inflazione["Mese"],
+            y=df_inflazione["Capitale Nominale (€)"],
+            name="Capitale Nominale",
+            line=dict(color=UIComponents.COLOR_INFO, width=3)
+        ))
+        fig.add_trace(go.Scatter(
+            x=df_inflazione["Mese"],
+            y=df_inflazione["Capitale Reale (€)"],
+            name="Capitale Reale (potere d'acquisto)",
+            line=dict(color=UIComponents.COLOR_ERROR, width=3)
+        ))
+        fig.update_layout(
+            title=f"Capitale Nominale vs Reale (inflazione {inflazione_annua*100:.1f}% annua)",
+            xaxis_title="Mesi",
+            yaxis_title="Valore (€)",
+            hovermode="x unified",
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            yaxis_tickformat="€,.0f"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Risultati finali
+        capitale_finale_nominale = capitale_nominale[-1]
+        capitale_finale_reale = capitale_reale[-1]
+        perdita_potere = ((capitale_finale_nominale - capitale_finale_reale) / capitale_finale_nominale) * 100
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric(
+                "Capitale Nominale",
+                f"€ {capitale_finale_nominale:,.0f}",
+                help="Il valore numerico dei tuoi soldi"
+            )
+        with col2:
+            st.metric(
+                "Capitale Reale",
+                f"€ {capitale_finale_reale:,.0f}",
+                delta=f"-{perdita_potere:.1f}%",
+                delta_color="inverse",
+                help="Il potere d'acquisto reale dei tuoi soldi"
+            )
+        with col3:
+            st.metric(
+                "Perdita potere d'acquisto",
+                f"{perdita_potere:.1f}%",
+                help="Quanto valore 'perdi' a causa dell'inflazione"
+            )
+        
+        st.markdown("---")
+        st.warning(
+            f"⚠️ Tra {anni} anni, **€ {capitale_finale_nominale:,.0f}** avranno lo stesso potere d'acquisto "
+            f"di **€ {capitale_finale_reale:,.0f}** di oggi. "
+            f"L'inflazione erode il **{perdita_potere:.1f}%** del tuo potere d'acquisto!"
+        )
+        
+        st.info(
+            "💡 **Perché è importante**: L'inflazione media in Europa è circa 2-3% all'anno. "
+            "Lasciare i soldi fermi sul conto corrente significa perdere potere d'acquisto ogni anno. "
+            "Investire con un rendimento superiore all'inflazione è l'unico modo per preservare e far crescere la tua ricchezza reale."
+        )
