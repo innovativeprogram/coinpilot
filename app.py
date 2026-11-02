@@ -1,6 +1,7 @@
 """
 CoinPilot - Pianificatore Finanziario Personale
 Entry point principale dell'applicazione
+Con salvataggio automatico dei dati
 """
 import streamlit as st
 import pandas as pd
@@ -19,6 +20,7 @@ from modules.budget import BudgetManager
 from modules.projections import FinancialProjections
 from modules.data_manager import DataManager
 from modules.ui_components import UIComponents
+from modules.storage import AutoStorage
 
 # Configurazione pagina
 st.set_page_config(
@@ -33,11 +35,88 @@ projections = FinancialProjections()
 data_manager = DataManager()
 ui = UIComponents()
 
+# Inizializza salvataggio automatico
+AutoStorage.init_auto_save()
+
+# Carica dati dall'ultima sessione se esistono
+saved_inputs = st.session_state.get("auto_save_inputs", None)
+
 # Renderizza header
 ui.render_header()
 
-# Renderizza sidebar e ottieni input
-inputs = ui.render_sidebar_inputs(budget_manager)
+# Renderizza sidebar e ottieni input (con valori salvati se esistono)
+if saved_inputs:
+    # Usa i dati salvati come valori di default
+    default_entrate = saved_inputs.get("entrate", 2000.0)
+    default_spese = saved_inputs.get("spese", budget_manager.default_spese)
+    default_tasso = saved_inputs.get("tasso", 5.0) / 100  # Converti da percentuale a decimale
+    default_anni = saved_inputs.get("anni", 10)
+    default_capitale = saved_inputs.get("capitale_iniziale", 0.0)
+    
+    # Mostra notifica che i dati sono stati caricati
+    st.info("📂 Dati caricati dall'ultima sessione")
+else:
+    # Usa i valori di default
+    default_entrate = 2000.0
+    default_spese = budget_manager.default_spese
+    default_tasso = 5.0 / 100
+    default_anni = 10
+    default_capitale = 0.0
+
+# Sidebar con valori di default dinamici
+st.sidebar.header("📊 I tuoi dati finanziari")
+
+entrate = st.sidebar.number_input(
+    "Entrate mensili nette (€)",
+    min_value=0.0,
+    value=float(default_entrate),
+    step=50.0
+)
+
+st.sidebar.subheader("Spese mensili")
+spese = {}
+for categoria, default_val in default_spese.items():
+    spese[categoria] = st.sidebar.number_input(
+        f"{categoria} (€)",
+        min_value=0.0,
+        value=float(default_val),
+        step=10.0
+    )
+
+st.sidebar.subheader("💼 Parametri investimento")
+tasso = st.sidebar.slider(
+    "Rendimento annuo stimato (%)",
+    min_value=0.0,
+    max_value=15.0,
+    value=float(default_tasso * 100),  # Converti da decimale a percentuale
+    step=0.1
+) / 100
+
+anni = st.sidebar.slider(
+    "Orizzonte temporale (anni)",
+    min_value=1,
+    max_value=40,
+    value=int(default_anni)
+)
+
+capitale_iniziale = st.sidebar.number_input(
+    "Capitale iniziale (€)",
+    min_value=0.0,
+    value=float(default_capitale),
+    step=100.0
+)
+
+# Costruisci il dizionario inputs
+inputs = {
+    "entrate": entrate,
+    "spese": spese,
+    "tasso": tasso,
+    "anni": anni,
+    "capitale_iniziale": capitale_iniziale
+}
+
+# Salva automaticamente i dati correnti
+AutoStorage.auto_save_current(inputs)
 
 # Calcola budget
 budget_data = budget_manager.calculate_budget(
@@ -139,7 +218,7 @@ with tab3:
                     delta=f"Mese {milestone['mese']}"
                 )
 
-# --- TAB 4: Obiettivi (AGGIORNATA CON TIMELINE) ---
+# --- TAB 4: Obiettivi ---
 with tab4:
     st.subheader("🏆 Quando raggiungerai il tuo obiettivo?")
     st.markdown("Definisci il tuo obiettivo e visualizza il percorso passo dopo passo.")
@@ -196,9 +275,12 @@ with tab4:
 with tab5:
     st.subheader("💾 Salva, carica ed esporta i tuoi dati")
     
+    # Notifica salvataggio automatico
+    st.info("💾 I tuoi dati vengono salvati automaticamente ad ogni modifica")
+    
     col1, col2, col3 = st.columns(3)
     
-    # SALVA
+    # SALVA MANUALE
     with col1:
         st.markdown("#### Salva budget corrente")
         if st.button("💾 Salva ora", use_container_width=True):
@@ -223,7 +305,14 @@ with tab5:
                 loaded_data = data_manager.load_budget(
                     f"data/{selected_file}"
                 )
-                st.session_state.update(loaded_data)
+                # Salva i dati caricati nel salvataggio automatico
+                AutoStorage.auto_save_current({
+                    "entrate": loaded_data["entrate"],
+                    "spese": loaded_data["spese"],
+                    "tasso": loaded_data["tasso"],
+                    "anni": loaded_data["anni"],
+                    "capitale_iniziale": loaded_data["capitale_iniziale"]
+                })
                 st.success("✅ Dati caricati! Ricarica la pagina per vederli applicati.")
                 st.rerun()
         else:
@@ -254,7 +343,14 @@ with tab5:
                     f.write(uploaded_file.getbuffer())
                 
                 imported_data = data_manager.import_from_csv(temp_path)
-                st.session_state.update(imported_data)
+                # Salva i dati importati nel salvataggio automatico
+                AutoStorage.auto_save_current({
+                    "entrate": imported_data.get("entrate", 2000.0),
+                    "spese": {k.replace("spesa_", ""): v for k, v in imported_data.items() if k.startswith("spesa_")},
+                    "tasso": imported_data.get("tasso", 0.05),
+                    "anni": imported_data.get("anni", 10),
+                    "capitale_iniziale": imported_data.get("capitale_iniziale", 0.0)
+                })
                 st.success("✅ Dati importati! Ricarica la pagina per vederli applicati.")
                 st.rerun()
     
@@ -271,6 +367,14 @@ with tab5:
             if data_manager.delete_budget(file_to_delete):
                 st.success(f"✅ Eliminato {file_to_delete}")
                 st.rerun()
+    
+    # RESET
+    st.markdown("---")
+    st.markdown("#### Reset dati")
+    if st.button("🔄 Resetta all'ultima sessione", use_container_width=True):
+        AutoStorage.clear_last_session()
+        st.success("✅ Dati resettati! Ricarica la pagina per usare i valori di default.")
+        st.rerun()
 
 # Renderizza footer
 ui.render_footer()
