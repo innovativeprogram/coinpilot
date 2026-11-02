@@ -3,6 +3,7 @@ Schermata di benvenuto per CoinPilot
 CoinPilot - Il tuo copilota per una finanza paziente
 """
 import streamlit as st
+import random
 
 
 class WelcomeScreen:
@@ -55,7 +56,6 @@ class WelcomeScreen:
     @staticmethod
     def render():
         """Renderizza la schermata di benvenuto completa"""
-        import random
         
         # CSS personalizzato per la welcome page
         welcome_css = """
@@ -198,41 +198,59 @@ class WelcomeScreen:
         # Seleziona una citazione casuale
         citazione = random.choice(WelcomeScreen.CITAZIONI)
         
-        # Container principale
+        # Container principale - HEADER
         st.markdown(
-            f"""
+            """
             <div class="welcome-container">
                 <div class="welcome-logo">🪙</div>
                 <div class="welcome-title">CoinPilot</div>
                 <div class="welcome-subtitle">Il tuo copilota per una finanza paziente</div>
-                
-                <div class="welcome-quote-box">
-                    <div class="welcome-quote-text">"{citazione['testo']}"</div>
-                    <div class="welcome-quote-author">— {citazione['autore']}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        # Box citazione
+        st.markdown(
+            f"""
+            <div class="welcome-quote-box">
+                <div class="welcome-quote-text">"{citazione['testo']}"</div>
+                <div class="welcome-quote-author">— {citazione['autore']}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        # Descrizione
+        st.markdown(
+            """
+            <div class="welcome-description">
+                Un'app pensata per chi crede che la vera ricchezza si costruisca 
+                con calma, costanza e lungimiranza. Pianifica il tuo futuro finanziario 
+                con la serenità di chi sa che il tempo è il miglior alleato.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        # Feature cards
+        st.markdown(
+            """
+            <div class="welcome-features">
+                <div class="welcome-feature">
+                    <div class="welcome-feature-icon">📊</div>
+                    <div class="welcome-feature-title">Budget</div>
+                    <div class="welcome-feature-desc">Gestisci entrate e spese con chiarezza</div>
                 </div>
-                
-                <div class="welcome-description">
-                    Un'app pensata per chi crede che la vera ricchezza si costruisca 
-                    con calma, costanza e lungimiranza. Pianifica il tuo futuro finanziario 
-                    con la serenità di chi sa che il tempo è il miglior alleato.
+                <div class="welcome-feature">
+                    <div class="welcome-feature-icon">🎯</div>
+                    <div class="welcome-feature-title">Proiezioni</div>
+                    <div class="welcome-feature-desc">Visualizza la crescita del tuo capitale</div>
                 </div>
-                
-                <div class="welcome-features">
-                    <div class="welcome-feature">
-                        <div class="welcome-feature-icon">📊</div>
-                        <div class="welcome-feature-title">Budget</div>
-                        <div class="welcome-feature-desc">Gestisci entrate e spese con chiarezza</div>
-                    </div>
-                    <div class="welcome-feature">
-                        <div class="welcome-feature-icon">🎯</div>
-                        <div class="welcome-feature-title">Proiezioni</div>
-                        <div class="welcome-feature-desc">Visualizza la crescita del tuo capitale</div>
-                    </div>
-                    <div class="welcome-feature">
-                        <div class="welcome-feature-icon">🏆</div>
-                        <div class="welcome-feature-title">Obiettivi</div>
-                        <div class="welcome-feature-desc">Raggiungi i tuoi traguardi passo dopo passo</div>
-                    </div>
+                <div class="welcome-feature">
+                    <div class="welcome-feature-icon">🏆</div>
+                    <div class="welcome-feature-title">Obiettivi</div>
+                    <div class="welcome-feature-desc">Raggiungi i tuoi traguardi passo dopo passo</div>
                 </div>
             </div>
             """,
