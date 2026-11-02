@@ -48,7 +48,14 @@ if WelcomeScreen.should_show_welcome():
     st.stop()
 
 # ============================================================================
-# 2. APP PRINCIPALE (il quiz è ora facoltativo, accessibile dalla sidebar)
+# 2. QUIZ (se richiesto dall'utente)
+# ============================================================================
+if st.session_state.get("show_quiz"):
+    FinancialQuiz.render()
+    st.stop()
+
+# ============================================================================
+# 3. APP PRINCIPALE
 # ============================================================================
 
 # Applica Dark Mode se attiva
@@ -208,8 +215,8 @@ with st.sidebar.expander("🧠 Quiz della Pazienza"):
     else:
         st.info("Il quiz è facoltativo. Fallo per scoprire il tuo profilo!")
         if st.button("🧠 Inizia il Quiz", use_container_width=True):
-            FinancialQuiz.render()
-            st.stop()
+            st.session_state["show_quiz"] = True
+            st.rerun()
 
 # ============================================================================
 # TABS PRINCIPALI
