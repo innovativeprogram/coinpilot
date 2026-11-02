@@ -1,4 +1,4 @@
-/* Stile moderno per CoinPilot */
+/* Stile moderno per CoinPilot - Versione Responsive */
 
 /* Card con ombra e bordi arrotondati */
 .stMetric {
@@ -22,12 +22,14 @@
     box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.1) !important;
 }
 
-/* Pulsanti con stile */
+/* Pulsanti con stile - ottimizzati per touch */
 .stButton > button {
     border-radius: 10px !important;
-    padding: 12px 24px !important;
+    padding: 14px 28px !important;
     font-weight: 600 !important;
+    font-size: 16px !important;
     transition: all 0.3s ease !important;
+    min-height: 48px !important;
 }
 
 .stButton > button:hover {
@@ -41,15 +43,17 @@
 }
 
 .stTabs [data-baseweb="tab"] {
-    padding: 10px 20px;
+    padding: 12px 24px;
     border-radius: 10px 10px 0 0;
     font-weight: 600;
+    font-size: 15px;
 }
 
 /* Success/Warning/Error messages più eleganti */
 .stAlert {
     border-radius: 10px !important;
     border-left-width: 4px !important;
+    font-size: 15px !important;
 }
 
 /* Sidebar più pulita */
@@ -74,4 +78,121 @@ h1, h2, h3 {
     border-radius: 15px !important;
     padding: 15px !important;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ============================================ */
+/* OTTIMIZZAZIONE MOBILE */
+/* ============================================ */
+
+/* Schermi piccoli (smartphone) */
+@media (max-width: 768px) {
+    /* Padding globale ridotto */
+    .main .block-container {
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+        padding-top: 20px !important;
+        padding-bottom: 20px !important;
+    }
+    
+    /* Metriche impilate verticalmente */
+    .stMetric {
+        padding: 15px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    /* Titoli più piccoli */
+    h1 {
+        font-size: 28px !important;
+    }
+    
+    h2 {
+        font-size: 22px !important;
+    }
+    
+    h3 {
+        font-size: 18px !important;
+    }
+    
+    /* Input fields più grandi per touch */
+    .stTextInput input, .stNumberInput input {
+        font-size: 18px !important;
+        padding: 14px !important;
+    }
+    
+    /* Pulsanti ancora più grandi */
+    .stButton > button {
+        padding: 16px 32px !important;
+        font-size: 17px !important;
+        width: 100% !important;
+    }
+    
+    /* Tab più compatti */
+    .stTabs [data-baseweb="tab"] {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+    
+    /* Sidebar più compatta su mobile */
+    section[data-testid="stSidebar"] {
+        width: 85% !important;
+    }
+    
+    /* Alert più leggibili */
+    .stAlert {
+        font-size: 14px !important;
+        padding: 12px !important;
+    }
+    
+    /* Grafici si adattano */
+    .js-plotly-plot {
+        padding: 10px !important;
+    }
+    
+    /* Colonne si impilano su mobile */
+    [data-testid="column"] {
+        margin-bottom: 15px !important;
+    }
+}
+
+/* Schermi molto piccoli (smartphone piccoli) */
+@media (max-width: 480px) {
+    h1 {
+        font-size: 24px !important;
+    }
+    
+    h2 {
+        font-size: 20px !important;
+    }
+    
+    h3 {
+        font-size: 16px !important;
+    }
+    
+    .stMetric {
+        padding: 12px !important;
+    }
+    
+    .stButton > button {
+        font-size: 16px !important;
+    }
+}
+
+/* Landscape mode su mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .main .block-container {
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+    }
+    
+    h1 {
+        font-size: 24px !important;
+    }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .main .block-container {
+        padding-left: 30px !important;
+        padding-right: 30px !important;
+    }
 }
