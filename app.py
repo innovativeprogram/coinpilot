@@ -1,11 +1,11 @@
 """
 CoinPilot - Pianificatore Finanziario Personale
-Con Dark Mode, FIRE Calculator, Inflation Simulator, Export PDF, Quiz e Glossario
-Con salvataggio dati separato per ogni utente (ID univoco)
+Con Dark Mode, FIRE Calculator, Inflation Simulator, Export PDF, Quiz facoltativo, Glossario e Cronologia mensile
 """
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime
 from fpdf import FPDF
 
@@ -24,6 +24,7 @@ from modules.ui_components import UIComponents
 from modules.storage import AutoStorage
 from modules.welcome import WelcomeScreen
 from modules.quiz import FinancialQuiz
+from modules.history import HistoryManager
 
 # Configurazione pagina
 st.set_page_config(
@@ -46,14 +47,7 @@ if WelcomeScreen.should_show_welcome():
     st.stop()
 
 # ============================================================================
-# 2. QUIZ DELLA PAZIENZA FINANZIARIA
-# ============================================================================
-if FinancialQuiz.should_show_quiz():
-    FinancialQuiz.render()
-    st.stop()
-
-# ============================================================================
-# 3. APP PRINCIPALE
+# 2. APP PRINCIPALE (il quiz è ora facoltativo, accessibile dalla sidebar)
 # ============================================================================
 
 # Applica Dark Mode se attiva
@@ -65,7 +59,7 @@ saved_inputs = st.session_state.get("auto_save_inputs", None)
 
 ui.render_header()
 
-# Mostra il profilo dell'investitore salvato (con emoji)
+# Mostra il profilo dell'investitore se il quiz è stato fatto
 if st.session_state.get("investor_profile"):
     st.markdown(
         f"""
@@ -148,7 +142,7 @@ with st.expander("📋 Riepilogo dati correnti", expanded=False):
         st.metric("Orizzonte", f"{anni} anni")
 
 # ============================================================================
-# MENU LATERALE: OBIETTIVI MULTIPLI, GLOSSARIO E QUIZ
+# MENU LATERALE: OBIETTIVI MULTIPLI, GLOSSARIO, QUIZ E CRONOLOGIA
 # ============================================================================
 st.sidebar.markdown("---")
 
@@ -184,22 +178,22 @@ with st.sidebar.expander("🎯 Obiettivi Multipli"):
 with st.sidebar.expander("📚 Glossario Finanziario"):
     st.markdown("""
     **💰 Interesse Composto**  
-    Guadagnare interessi non solo sul capitale iniziale, ma anche sugli interessi accumulati nel tempo. Einstein lo chiamava "l'ottava meraviglia del mondo".
+    Guadagnare interessi non solo sul capitale iniziale, ma anche sugli interessi accumulati nel tempo.
 
     **📈 PAC (Piano di Accumulo)**  
-    Investire una cifra fissa a intervalli regolari (es. ogni mese), riducendo l'impatto della volatilità del mercato e sfruttando la media dei costi.
+    Investire una cifra fissa a intervalli regolari, riducendo l'impatto della volatilità.
 
     **🏦 ETF (Exchange Traded Fund)**  
-    Un fondo di investimento che replica un indice di mercato (es. S&P 500 o MSCI World), offrendo diversificazione immediata a costi bassissimi.
+    Un fondo che replica un indice di mercato, offrendo diversificazione a costi bassissimi.
 
     **🔥 FIRE**  
-    *Financial Independence, Retire Early*. La filosofia che punta ad accumulare un capitale sufficiente a vivere di rendita, liberando il proprio tempo.
+    *Financial Independence, Retire Early*. Accumulare capitale sufficiente a vivere di rendita.
 
     **📉 Inflazione**  
-    L'aumento generale dei prezzi nel tempo, che riduce il potere d'acquisto del denaro. Per questo lasciare i soldi fermi è il rischio più grande.
+    L'aumento generale dei prezzi, che riduce il potere d'acquisto del denaro.
     """)
 
-# QUIZ - POSSIBILITÀ DI RIFARLO
+# QUIZ FACOLTATIVO
 with st.sidebar.expander("🧠 Quiz della Pazienza"):
     if st.session_state.get("investor_profile"):
         st.markdown(f"**Il tuo profilo attuale:**")
@@ -211,21 +205,22 @@ with st.sidebar.expander("🧠 Quiz della Pazienza"):
             st.success("Quiz resettato! Ricarica la pagina per rifarlo.")
             st.rerun()
     else:
-        st.info("Non hai ancora fatto il quiz. Inizia ora!")
+        st.info("Il quiz è facoltativo. Fallo per scoprire il tuo profilo!")
         if st.button("🧠 Inizia il Quiz", use_container_width=True):
-            FinancialQuiz.reset_quiz()
-            st.rerun()
+            FinancialQuiz.render()
+            st.stop()
 
 # ============================================================================
 # TABS PRINCIPALI
 # ============================================================================
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "📈 Riepilogo", 
     "📊 Analisi Spese", 
     "🎯 Proiezione", 
     "🏆 Obiettivi",
     "🔥 FIRE",
     "📉 Inflazione",
+    "📅 Cronologia",
     "💾 Dati",
     "📖 Il Libro"
 ])
@@ -278,9 +273,9 @@ with tab4:
     obiettivo = st.number_input("Quanto vuoi risparmiare? (€)", min_value=0.0, value=10000.0, step=500.0, format="%.2f")
     
     if budget_data["risparmio_mensile"] > 0 and obiettivo > inputs["capitale_iniziale"]:
-        timeline = projections.calculate_goal_timeline(obiettivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
+        timeline = projections.calculate_goal_timeline(objetivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
         ui.render_goal_timeline(timeline, obiettivo)
-        mesi, anni_obj = projections.calculate_months_to_goal(obiettivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
+        mesi, anni_obj = projections.calculate_months_to_goal(objetivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
         st.success(f"🎉 Raggiungerai **€ {obiettivo:,.2f}** in circa **{anni_obj:.1f} anni** ({mesi} mesi).")
         st.info("💡 *Ricorda: la costanza batte l'intensità. Piccoli risparmi mensili, moltiplicati dal tempo e dall'interesse composto, costruiscono la vera ricchezza.*")
     elif budget_data["risparmio_mensile"] <= 0:
@@ -319,7 +314,155 @@ with tab6:
         inflazione_annua=inflazione_annua
     )
 
+# ============================================================================
+# TAB 7: CRONOLOGIA MENSILE (NUOVA)
+# ============================================================================
 with tab7:
+    st.subheader("📅 Cronologia Mensile")
+    st.markdown("Registra e monitora i tuoi dati finanziari mese per mese.")
+    st.markdown("---")
+    
+    # Form per aggiungere/modificare un mese
+    col_form1, col_form2 = st.columns(2)
+    
+    with col_form1:
+        st.markdown("#### ➕ Aggiungi/Modifica Mese")
+        with st.form("add_month_form"):
+            anno = st.number_input("Anno", min_value=2020, max_value=2100, value=datetime.now().year, step=1)
+            mese = st.number_input("Mese", min_value=1, max_value=12, value=datetime.now().month, step=1)
+            
+            entrate_mese = st.number_input("Entrate del mese (€)", min_value=0.0, value=float(entrate), step=50.0, format="%.2f")
+            
+            st.markdown("**Spese del mese:**")
+            spese_mese = {}
+            for categoria in budget_manager.default_spese.keys():
+                spese_mese[categoria] = st.number_input(
+                    f"{categoria} (€)", 
+                    min_value=0.0, 
+                    value=float(spese.get(categoria, 0.0)), 
+                    step=10.0, 
+                    format="%.2f"
+                )
+            
+            risparmio_mese = st.number_input("Risparmio mensile (€)", min_value=0.0, value=float(budget_data["risparmio_mensile"]), step=50.0, format="%.2f")
+            note_mese = st.text_input("Note (opzionale)", placeholder="Es. Mese con spese straordinarie")
+            
+            submitted = st.form_submit_button("💾 Salva Mese", use_container_width=True, type="primary")
+            
+            if submitted:
+                month_key = HistoryManager.add_month(
+                    anno, mese, entrate_mese, spese_mese, risparmio_mese, note_mese
+                )
+                st.success(f"✅ Mese {mese}/{anno} salvato con successo!")
+                st.rerun()
+    
+    with col_form2:
+        st.markdown("#### 📊 Andamento nel Tempo")
+        
+        history = HistoryManager.load_history()
+        
+        if history:
+            months_sorted = HistoryManager.get_all_months_sorted()
+            
+            # Prepara dati per il grafico
+            df_history = pd.DataFrame([history[m] for m in months_sorted])
+            df_history["Periodo"] = df_history.apply(lambda x: f"{x['mese']:02d}/{x['anno']}", axis=1)
+            
+            fig = go.Figure()
+            
+            fig.add_trace(go.Scatter(
+                x=df_history["Periodo"],
+                y=df_history["entrate"],
+                name="Entrate",
+                line=dict(color="#2ECC71", width=3),
+                mode="lines+markers"
+            ))
+            
+            fig.add_trace(go.Scatter(
+                x=df_history["Periodo"],
+                y=df_history["totale_spese"],
+                name="Spese",
+                line=dict(color="#E74C3C", width=3),
+                mode="lines+markers"
+            ))
+            
+            fig.add_trace(go.Scatter(
+                x=df_history["Periodo"],
+                y=df_history["risparmio_mensile"],
+                name="Risparmio",
+                line=dict(color="#3498DB", width=3),
+                mode="lines+markers"
+            ))
+            
+            fig.update_layout(
+                title="Andamento Mensile",
+                xaxis_title="Periodo",
+                yaxis_title="Importo (€)",
+                hovermode="x unified",
+                plot_bgcolor="white",
+                paper_bgcolor="white",
+                yaxis_tickformat="€,.0f",
+                height=400
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Statistiche
+            st.markdown("#### 📈 Statistiche")
+            col_stat1, col_stat2, col_stat3 = st.columns(3)
+            
+            with col_stat1:
+                media_entrate = df_history["entrate"].mean()
+                st.metric("Media Entrate", f"€ {media_entrate:,.0f}")
+            
+            with col_stat2:
+                media_spese = df_history["totale_spese"].mean()
+                st.metric("Media Spese", f"€ {media_spese:,.0f}")
+            
+            with col_stat3:
+                media_risparmio = df_history["risparmio_mensile"].mean()
+                st.metric("Media Risparmio", f"€ {media_risparmio:,.0f}")
+        else:
+            st.info("Nessun dato storico. Aggiungi il primo mese usando il form a sinistra!")
+    
+    # Lista mesi salvati
+    st.markdown("---")
+    st.markdown("#### 📋 Mesi Registrati")
+    
+    history = HistoryManager.load_history()
+    
+    if history:
+        months_sorted = HistoryManager.get_all_months_sorted()
+        
+        for month_key in reversed(months_sorted):
+            month_data = history[month_key]
+            
+            with st.expander(f"📅 {month_data['mese']:02d}/{month_data['anno']} - Entrate: € {month_data['entrate']:,.0f} | Risparmio: € {month_data['risparmio_mensile']:,.0f}"):
+                col_info1, col_info2, col_info3 = st.columns(3)
+                
+                with col_info1:
+                    st.markdown(f"**Entrate:** € {month_data['entrate']:,.2f}")
+                    st.markdown(f"**Risparmio:** € {month_data['risparmio_mensile']:,.2f}")
+                
+                with col_info2:
+                    st.markdown("**Spese:**")
+                    for categoria, importo in month_data['spese'].items():
+                        st.markdown(f"  • {categoria}: € {importo:,.2f}")
+                    st.markdown(f"**Totale Spese:** € {month_data['totale_spese']:,.2f}")
+                
+                with col_info3:
+                    if month_data.get('note'):
+                        st.markdown(f"**Note:** {month_data['note']}")
+                    st.markdown(f"**Salvato il:** {month_data['timestamp'][:10]}")
+                
+                if st.button(f"🗑️ Elimina {month_key}", key=f"del_{month_key}"):
+                    HistoryManager.delete_month(month_key)
+                    st.success(f"✅ Mese {month_key} eliminato!")
+                    st.rerun()
+    else:
+        st.info("Nessun mese registrato. Inizia ad aggiungere i tuoi dati!")
+
+with tab8:
     st.subheader("💾 Salva, carica ed esporta i tuoi dati")
     st.info("💾 I tuoi dati vengono salvati automaticamente ad ogni modifica")
     
@@ -473,7 +616,7 @@ with tab7:
         st.success("✅ Welcome page resettata! Ricarica la pagina per vederla di nuovo.")
         st.rerun()
 
-with tab8:
+with tab9:
     ui.render_book_presentation()
 
 ui.render_footer()
