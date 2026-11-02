@@ -3,4 +3,3 @@ pandas
 numpy
 plotly
 fpdf2
-streamlit-cookies-controller
