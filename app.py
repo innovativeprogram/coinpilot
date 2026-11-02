@@ -1,6 +1,7 @@
 """
 CoinPilot - Pianificatore Finanziario Personale
 Con Dark Mode, FIRE Calculator, Inflation Simulator, Export PDF, Quiz e Glossario
+Con salvataggio dati separato per ogni utente (ID univoco)
 """
 import streamlit as st
 import pandas as pd
@@ -22,7 +23,7 @@ from modules.data_manager import DataManager
 from modules.ui_components import UIComponents
 from modules.storage import AutoStorage
 from modules.welcome import WelcomeScreen
-from modules.quiz import FinancialQuiz  # <-- NUOVO: Import del Quiz
+from modules.quiz import FinancialQuiz
 
 # Configurazione pagina
 st.set_page_config(
@@ -45,7 +46,7 @@ if WelcomeScreen.should_show_welcome():
     st.stop()
 
 # ============================================================================
-# 2. QUIZ DELLA PAZIENZA FINANZIARIA (NUOVO)
+# 2. QUIZ DELLA PAZIENZA FINANZIARIA
 # ============================================================================
 if FinancialQuiz.should_show_quiz():
     FinancialQuiz.render()
@@ -64,14 +65,13 @@ saved_inputs = st.session_state.get("auto_save_inputs", None)
 
 ui.render_header()
 
-# Mostra il profilo dell'investitore in cima (se il quiz è stato completato)
+# Mostra il profilo dell'investitore salvato (con emoji)
 if st.session_state.get("investor_profile"):
     st.markdown(
         f"""
         <div style="background-color: #E8F5E9; border-left: 4px solid #2ECC71; 
                     padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-            <strong>🦉 Il tuo profilo:</strong> {st.session_state["investor_profile"]} 
-            <span style="float: right; cursor: pointer;" onclick="alert('Per rifare il quiz, vai nella tab Dati e clicca Reset')">ℹ️</span>
+            <strong>🦉 Il tuo profilo:</strong> {st.session_state["investor_profile"]}
         </div>
         """,
         unsafe_allow_html=True
@@ -148,11 +148,11 @@ with st.expander("📋 Riepilogo dati correnti", expanded=False):
         st.metric("Orizzonte", f"{anni} anni")
 
 # ============================================================================
-# MENU LATERALE: OBIETTIVI MULTIPLI E GLOSSARIO (NUOVI)
+# MENU LATERALE: OBIETTIVI MULTIPLI, GLOSSARIO E QUIZ
 # ============================================================================
 st.sidebar.markdown("---")
 
-# 4. OBIETTIVI MULTIPLI (Menu a tendina)
+# OBIETTIVI MULTIPLI
 with st.sidebar.expander("🎯 Obiettivi Multipli"):
     if "multi_goals" not in st.session_state:
         st.session_state["multi_goals"] = []
@@ -180,7 +180,7 @@ with st.sidebar.expander("🎯 Obiettivi Multipli"):
     else:
         st.info("Nessun obiettivo aggiunto. Inizia a pianificare!")
 
-# 2. GLOSSARIO FINANZIARIO (Menu a tendina in fondo)
+# GLOSSARIO FINANZIARIO
 with st.sidebar.expander("📚 Glossario Finanziario"):
     st.markdown("""
     **💰 Interesse Composto**  
@@ -198,6 +198,23 @@ with st.sidebar.expander("📚 Glossario Finanziario"):
     **📉 Inflazione**  
     L'aumento generale dei prezzi nel tempo, che riduce il potere d'acquisto del denaro. Per questo lasciare i soldi fermi è il rischio più grande.
     """)
+
+# QUIZ - POSSIBILITÀ DI RIFARLO
+with st.sidebar.expander("🧠 Quiz della Pazienza"):
+    if st.session_state.get("investor_profile"):
+        st.markdown(f"**Il tuo profilo attuale:**")
+        st.markdown(f"### {st.session_state['investor_profile']}")
+        st.markdown(f"**Punteggio:** {st.session_state.get('quiz_score', 0)}/15")
+        st.markdown("---")
+        if st.button("🔄 Rifai il Quiz", use_container_width=True):
+            FinancialQuiz.reset_quiz()
+            st.success("Quiz resettato! Ricarica la pagina per rifarlo.")
+            st.rerun()
+    else:
+        st.info("Non hai ancora fatto il quiz. Inizia ora!")
+        if st.button("🧠 Inizia il Quiz", use_container_width=True):
+            FinancialQuiz.reset_quiz()
+            st.rerun()
 
 # ============================================================================
 # TABS PRINCIPALI
@@ -450,11 +467,10 @@ with tab7:
         st.rerun()
     
     st.markdown("---")
-    st.markdown("#### Mostra di nuovo la schermata di benvenuto e il Quiz")
-    if st.button("👋 Rivedi welcome page e Quiz", use_container_width=True):
+    st.markdown("#### Mostra di nuovo la schermata di benvenuto")
+    if st.button("👋 Rivedi welcome page", use_container_width=True):
         WelcomeScreen.reset_welcome()
-        FinancialQuiz.reset_quiz()  # <-- NUOVO: Resetta anche il quiz
-        st.success("✅ Welcome page e Quiz resettati! Ricarica la pagina per vederli di nuovo.")
+        st.success("✅ Welcome page resettata! Ricarica la pagina per vederla di nuovo.")
         st.rerun()
 
 with tab8:
