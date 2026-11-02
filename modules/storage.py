@@ -1,28 +1,34 @@
 """
-Gestione salvataggio dati con separazione per utente tramite cookie
+Gestione salvataggio dati con separazione per utente tramite cookie JavaScript
 Ogni utente ha un ID univoco salvato in un cookie del browser
 """
 import json
 import os
 import uuid
 import streamlit as st
-from streamlit_cookies_controller import CookieController
+import streamlit.components.v1 as components
 
 
 class AutoStorage:
     """Gestisce il salvataggio automatico dei dati con separazione per utente"""
     
-    controller = CookieController()
-    
     @staticmethod
     def get_user_id():
-        """Restituisce un ID utente univoco salvato in un cookie"""
+        """Restituisce un ID utente univoco salvato in un cookie del browser"""
         if "user_id" not in st.session_state:
-            user_id = AutoStorage.controller.get('coinpilot_user_id')
+            # Usa il componente custom per ottenere l'ID dal cookie
+            user_id_component = components.declare_component(
+                "local_storage",
+                path="components/local_storage"
+            )
+            
+            user_id = user_id_component(key="user_id")
+            
             if not user_id:
                 user_id = str(uuid.uuid4())[:12]
-                AutoStorage.controller.set('coinpilot_user_id', user_id)
+            
             st.session_state["user_id"] = user_id
+        
         return st.session_state["user_id"]
     
     @staticmethod
