@@ -82,7 +82,7 @@ with tab2:
         st.subheader("Entrate vs Spese")
         ui.render_bar_chart(budget_data)
 
-# --- TAB 3: Proiezione (AGGIORNATA CON MULTI-SCENARIO) ---
+# --- TAB 3: Proiezione ---
 with tab3:
     st.subheader("🎯 Proiezione del capitale nel tempo")
     st.markdown(
@@ -92,7 +92,7 @@ with tab3:
         f"ecco la proiezione a **{inputs['anni']} anni**:"
     )
     
-    # Calcolo multi-scenario (nuovo!)
+    # Calcolo multi-scenario
     df_multi = projections.calculate_multi_scenario(
         inputs["capitale_iniziale"],
         budget_data["risparmio_mensile"],
@@ -139,9 +139,11 @@ with tab3:
                     delta=f"Mese {milestone['mese']}"
                 )
 
-# --- TAB 4: Obiettivi ---
+# --- TAB 4: Obiettivi (AGGIORNATA CON TIMELINE) ---
 with tab4:
     st.subheader("🏆 Quando raggiungerai il tuo obiettivo?")
+    st.markdown("Definisci il tuo obiettivo e visualizza il percorso passo dopo passo.")
+    
     obiettivo = st.number_input(
         "Quanto vuoi risparmiare? (€)", 
         min_value=0.0, 
@@ -150,6 +152,18 @@ with tab4:
     )
     
     if budget_data["risparmio_mensile"] > 0 and obiettivo > inputs["capitale_iniziale"]:
+        # Calcola la timeline completa con tappe intermedie
+        timeline = projections.calculate_goal_timeline(
+            obiettivo,
+            inputs["capitale_iniziale"],
+            budget_data["risparmio_mensile"],
+            inputs["tasso"]
+        )
+        
+        # Renderizza la timeline visuale
+        ui.render_goal_timeline(timeline, obiettivo)
+        
+        # Messaggio finale con calcolo originale
         mesi, anni = projections.calculate_months_to_goal(
             obiettivo,
             inputs["capitale_iniziale"],
@@ -161,8 +175,20 @@ with tab4:
             f"🎉 Raggiungerai **€ {obiettivo:,.2f}** in circa "
             f"**{anni:.1f} anni** ({mesi} mesi)."
         )
+        
+        # Suggerimento basato sulla pazienza finanziaria
+        st.info(
+            "💡 *Ricorda: la costanza batte l'intensità. "
+            "Piccoli risparmi mensili, moltiplicati dal tempo e dall'interesse composto, "
+            "costruiscono la vera ricchezza.*"
+        )
+        
     elif budget_data["risparmio_mensile"] <= 0:
         st.warning("⚠️ Con un risparmio mensile pari o inferiore a zero non puoi raggiungere l'obiettivo.")
+        st.markdown(
+            "Prima di tutto, cerca di creare un surplus mensile. "
+            "Anche solo € 50 al mese possono fare la differenza nel lungo periodo!"
+        )
     else:
         st.info("L'obiettivo è inferiore al capitale iniziale: l'hai già raggiunto! 🎉")
 
