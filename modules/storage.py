@@ -1,93 +1,69 @@
 """
-Gestione salvataggio automatico nel localStorage del browser
+Gestione salvataggio automatico dei dati
 CoinPilot - Il tuo copilota per una finanza paziente
 """
-import streamlit as st
-import streamlit.components.v1 as components
 import json
+import os
+import streamlit as st
 
 
-class BrowserStorage:
-    """Gestisce il salvataggio automatico dei dati nel localStorage del browser"""
+class AutoStorage:
+    """Gestisce il salvataggio automatico dei dati in un file locale"""
     
-    STORAGE_KEY = "coinpilot_data"
-    
-    @staticmethod
-    def load_data():
-        """
-        Carica i dati salvati nel localStorage del browser.
-        Restituisce un dizionario con i dati o None se non ci sono dati salvati.
-        """
-        # JavaScript che legge dal localStorage e passa i dati a Streamlit
-        js_code = f"""
-        <script>
-        const data = localStorage.getItem("{BrowserStorage.STORAGE_KEY}");
-        const streamlitData = window.parent.document.querySelector("#storage-data");
-        if (streamlitData) {{
-            streamlitData.innerText = data || "null";
-        }}
-        </script>
-        <div id="storage-data" style="display:none;"></div>
-        """
-        components.html(js_code, height=0)
-        
-        # Recupera i dati dal componente hidden
-        # Nota: Streamlit non può leggere direttamente dal JS, quindi usiamo session_state
-        return st.session_state.get("loaded_data", None)
+    LAST_SESSION_FILE = "data/last_session.json"
     
     @staticmethod
-    def save_data(data_dict):
+    def save_last_session(data_dict):
         """
-        Salva i dati nel localStorage del browser.
+        Salva i dati correnti nell'ultima sessione
         data_dict: dizionario con i dati da salvare
         """
-        data_json = json.dumps(data_dict)
+        # Assicurati che la directory esista
+        os.makedirs("data", exist_ok=True)
         
-        # JavaScript che scrive nel localStorage
-        js_code = f"""
-        <script>
-        const data = {json.dumps(data_json)};
-        localStorage.setItem("{BrowserStorage.STORAGE_KEY}", data);
-        </script>
-        """
-        components.html(js_code, height=0)
-        
-        # Salva anche in session_state per uso immediato
-        st.session_state["loaded_data"] = data_dict
+        with open(AutoStorage.LAST_SESSION_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data_dict, f, indent=2, ensure_ascii=False)
     
     @staticmethod
-    def clear_data():
-        """Cancella i dati salvati nel localStorage"""
-        js_code = f"""
-        <script>
-        localStorage.removeItem("{BrowserStorage.STORAGE_KEY}");
-        </script>
+    def load_last_session():
         """
-        components.html(js_code, height=0)
-        st.session_state["loaded_data"] = None
+        Carica i dati dall'ultima sessione salvata
+        Restituisce un dizionario con i dati o None se non ci sono dati salvati
+        """
+        if not os.path.exists(AutoStorage.LAST_SESSION_FILE):
+            return None
+        
+        try:
+            with open(AutoStorage.LAST_SESSION_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return None
     
     @staticmethod
-    def init_storage():
+    def clear_last_session():
+        """Cancella i dati dell'ultima sessione"""
+        if os.path.exists(AutoStorage.LAST_SESSION_FILE):
+            os.remove(AutoStorage.LAST_SESSION_FILE)
+    
+    @staticmethod
+    def init_auto_save(inputs_key="auto_save_inputs"):
         """
-        Inizializza il sistema di storage: carica i dati salvati all'avvio
-        e li rende disponibili in session_state
+        Inizializza il sistema di salvataggio automatico
+        Carica i dati dall'ultima sessione se esistono
         """
-        if "loaded_data" not in st.session_state:
-            st.session_state["loaded_data"] = None
-        
-        # JavaScript che legge dal localStorage al caricamento della pagina
-        js_code = f"""
-        <script>
-        (function() {{
-            const data = localStorage.getItem("{BrowserStorage.STORAGE_KEY}");
-            if (data) {{
-                // Invia i dati a Streamlit tramite un evento personalizzato
-                window.parent.postMessage({{
-                    type: "streamlit:setComponentValue",
-                    data: data
-                }}, "*");
-            }}
-        }})();
-        </script>
+        if inputs_key not in st.session_state:
+            # Prova a caricare dall'ultima sessione
+            saved_data = AutoStorage.load_last_session()
+            if saved_data:
+                st.session_state[inputs_key] = saved_data
+            else:
+                st.session_state[inputs_key] = None
+    
+    @staticmethod
+    def auto_save_current(inputs_dict, inputs_key="auto_save_inputs"):
         """
-        components.html(js_code, height=0)
+        Salva automaticamente i dati correnti
+        inputs_dict: dizionario con i dati correnti
+        """
+        st.session_state[inputs_key] = inputs_dict
+        AutoStorage.save_last_session(inputs_dict)
