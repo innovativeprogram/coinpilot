@@ -1,34 +1,11 @@
 """
-Gestione salvataggio dati con separazione per utente tramite cookie JavaScript
-Ogni utente ha un ID univoco salvato in un cookie del browser
+Gestione salvataggio dati con separazione per utente
+Ogni sessione ha un ID univoco temporaneo
 """
 import json
 import os
 import uuid
 import streamlit as st
-import streamlit.components.v1 as components
-
-# Dichiara il componente una sola volta a livello di modulo
-_user_id_component = components.declare_component(
-    "local_storage",
-    path="components/local_storage"
-)
-
-
-def get_user_id_from_component():
-    """
-    Funzione globale che renderizza il componente e restituisce l'ID utente.
-    Deve essere chiamata all'inizio dell'app, prima di qualsiasi altra cosa.
-    """
-    if "user_id" not in st.session_state:
-        user_id = _user_id_component(key="user_id")
-        
-        if not user_id:
-            user_id = str(uuid.uuid4())[:12]
-        
-        st.session_state["user_id"] = user_id
-    
-    return st.session_state["user_id"]
 
 
 class AutoStorage:
@@ -36,9 +13,8 @@ class AutoStorage:
     
     @staticmethod
     def get_user_id():
-        """Restituisce l'ID utente salvato in session_state"""
+        """Restituisce un ID utente univoco per la sessione corrente"""
         if "user_id" not in st.session_state:
-            # Se non è stato ancora impostato, genera un ID temporaneo
             st.session_state["user_id"] = str(uuid.uuid4())[:12]
         return st.session_state["user_id"]
     
