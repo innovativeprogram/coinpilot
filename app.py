@@ -22,7 +22,7 @@ from modules.budget import BudgetManager
 from modules.projections import FinancialProjections
 from modules.data_manager import DataManager
 from modules.ui_components import UIComponents
-from modules.storage import AutoStorage
+from modules.storage import AutoStorage, get_user_id_from_component
 from modules.welcome import WelcomeScreen
 from modules.quiz import FinancialQuiz
 from modules.history import HistoryManager
@@ -33,6 +33,12 @@ st.set_page_config(
     page_icon="🪙",
     layout="wide"
 )
+
+# ============================================================================
+# 0. INIZIALIZZAZIONE ID UTENTE (DEVE ESSERE PRIMA DI TUTTO)
+# ============================================================================
+# Questo renderizza il componente custom che legge/imposta il cookie
+user_id = get_user_id_from_component()
 
 # Inizializza gestori
 budget_manager = BudgetManager()
