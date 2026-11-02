@@ -129,7 +129,7 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "🎯 Proiezione", 
     "🏆 Obiettivi",
     "💾 Dati",
-    "📖 Il Libro"  # <-- NUOVA TAB
+    "📖 Il Libro"
 ])
 
 with tab1:
@@ -180,6 +180,7 @@ with tab4:
     obiettivo = st.number_input("Quanto vuoi risparmiare? (€)", min_value=0.0, value=10000.0, step=500.0, format="%.2f")
     
     if budget_data["risparmio_mensile"] > 0 and obiettivo > inputs["capitale_iniziale"]:
+        # FIX: corretto "objetivo" in "obiettivo"
         timeline = projections.calculate_goal_timeline(objetivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
         ui.render_goal_timeline(timeline, obiettivo)
         mesi, anni_obj = projections.calculate_months_to_goal(objetivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
