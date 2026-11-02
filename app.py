@@ -1,6 +1,7 @@
 """
 CoinPilot - Pianificatore Finanziario Personale
 Con Dark Mode, FIRE Calculator, Inflation Simulator, Export PDF, Quiz facoltativo, Glossario e Cronologia mensile
+Salvataggio dati permanente e privato tramite LocalStorage del browser
 """
 import streamlit as st
 import pandas as pd
@@ -88,7 +89,7 @@ if saved_inputs:
     default_tasso = saved_inputs.get("tasso", 0.05)
     default_anni = saved_inputs.get("anni", 10)
     default_capitale = saved_inputs.get("capitale_iniziale", 0.0)
-    st.info("📂 Dati caricati dall'ultima sessione")
+    st.info("📂 Dati caricati dalla tua memoria locale")
 else:
     default_entrate = 2000.0
     default_spese = budget_manager.default_spese
@@ -142,7 +143,7 @@ with st.expander("📋 Riepilogo dati correnti", expanded=False):
         st.metric("Orizzonte", f"{anni} anni")
 
 # ============================================================================
-# MENU LATERALE: OBIETTIVI MULTIPLI, GLOSSARIO, QUIZ E CRONOLOGIA
+# MENU LATERALE: OBIETTIVI MULTIPLI, GLOSSARIO, QUIZ
 # ============================================================================
 st.sidebar.markdown("---")
 
@@ -315,14 +316,13 @@ with tab6:
     )
 
 # ============================================================================
-# TAB 7: CRONOLOGIA MENSILE (NUOVA)
+# TAB 7: CRONOLOGIA MENSILE
 # ============================================================================
 with tab7:
     st.subheader("📅 Cronologia Mensile")
-    st.markdown("Registra e monitora i tuoi dati finanziari mese per mese.")
+    st.markdown("Registra e monitora i tuoi dati finanziari mese per mese. I dati sono salvati in modo permanente nel tuo browser.")
     st.markdown("---")
     
-    # Form per aggiungere/modificare un mese
     col_form1, col_form2 = st.columns(2)
     
     with col_form1:
@@ -363,96 +363,49 @@ with tab7:
         
         if history:
             months_sorted = HistoryManager.get_all_months_sorted()
-            
-            # Prepara dati per il grafico
             df_history = pd.DataFrame([history[m] for m in months_sorted])
             df_history["Periodo"] = df_history.apply(lambda x: f"{x['mese']:02d}/{x['anno']}", axis=1)
             
             fig = go.Figure()
-            
-            fig.add_trace(go.Scatter(
-                x=df_history["Periodo"],
-                y=df_history["entrate"],
-                name="Entrate",
-                line=dict(color="#2ECC71", width=3),
-                mode="lines+markers"
-            ))
-            
-            fig.add_trace(go.Scatter(
-                x=df_history["Periodo"],
-                y=df_history["totale_spese"],
-                name="Spese",
-                line=dict(color="#E74C3C", width=3),
-                mode="lines+markers"
-            ))
-            
-            fig.add_trace(go.Scatter(
-                x=df_history["Periodo"],
-                y=df_history["risparmio_mensile"],
-                name="Risparmio",
-                line=dict(color="#3498DB", width=3),
-                mode="lines+markers"
-            ))
+            fig.add_trace(go.Scatter(x=df_history["Periodo"], y=df_history["entrate"], name="Entrate", line=dict(color="#2ECC71", width=3), mode="lines+markers"))
+            fig.add_trace(go.Scatter(x=df_history["Periodo"], y=df_history["totale_spese"], name="Spese", line=dict(color="#E74C3C", width=3), mode="lines+markers"))
+            fig.add_trace(go.Scatter(x=df_history["Periodo"], y=df_history["risparmio_mensile"], name="Risparmio", line=dict(color="#3498DB", width=3), mode="lines+markers"))
             
             fig.update_layout(
-                title="Andamento Mensile",
-                xaxis_title="Periodo",
-                yaxis_title="Importo (€)",
-                hovermode="x unified",
-                plot_bgcolor="white",
-                paper_bgcolor="white",
-                yaxis_tickformat="€,.0f",
-                height=400
+                title="Andamento Mensile", xaxis_title="Periodo", yaxis_title="Importo (€)",
+                hovermode="x unified", plot_bgcolor="white", paper_bgcolor="white",
+                yaxis_tickformat="€,.0f", height=400
             )
-            
             st.plotly_chart(fig, use_container_width=True)
             
-            # Statistiche
             st.markdown("#### 📈 Statistiche")
             col_stat1, col_stat2, col_stat3 = st.columns(3)
-            
-            with col_stat1:
-                media_entrate = df_history["entrate"].mean()
-                st.metric("Media Entrate", f"€ {media_entrate:,.0f}")
-            
-            with col_stat2:
-                media_spese = df_history["totale_spese"].mean()
-                st.metric("Media Spese", f"€ {media_spese:,.0f}")
-            
-            with col_stat3:
-                media_risparmio = df_history["risparmio_mensile"].mean()
-                st.metric("Media Risparmio", f"€ {media_risparmio:,.0f}")
+            with col_stat1: st.metric("Media Entrate", f"€ {df_history['entrate'].mean():,.0f}")
+            with col_stat2: st.metric("Media Spese", f"€ {df_history['totale_spese'].mean():,.0f}")
+            with col_stat3: st.metric("Media Risparmio", f"€ {df_history['risparmio_mensile'].mean():,.0f}")
         else:
             st.info("Nessun dato storico. Aggiungi il primo mese usando il form a sinistra!")
     
-    # Lista mesi salvati
     st.markdown("---")
     st.markdown("#### 📋 Mesi Registrati")
-    
     history = HistoryManager.load_history()
     
     if history:
         months_sorted = HistoryManager.get_all_months_sorted()
-        
         for month_key in reversed(months_sorted):
             month_data = history[month_key]
-            
             with st.expander(f"📅 {month_data['mese']:02d}/{month_data['anno']} - Entrate: € {month_data['entrate']:,.0f} | Risparmio: € {month_data['risparmio_mensile']:,.0f}"):
                 col_info1, col_info2, col_info3 = st.columns(3)
-                
                 with col_info1:
                     st.markdown(f"**Entrate:** € {month_data['entrate']:,.2f}")
                     st.markdown(f"**Risparmio:** € {month_data['risparmio_mensile']:,.2f}")
-                
                 with col_info2:
                     st.markdown("**Spese:**")
                     for categoria, importo in month_data['spese'].items():
                         st.markdown(f"  • {categoria}: € {importo:,.2f}")
                     st.markdown(f"**Totale Spese:** € {month_data['totale_spese']:,.2f}")
-                
                 with col_info3:
-                    if month_data.get('note'):
-                        st.markdown(f"**Note:** {month_data['note']}")
+                    if month_data.get('note'): st.markdown(f"**Note:** {month_data['note']}")
                     st.markdown(f"**Salvato il:** {month_data['timestamp'][:10]}")
                 
                 if st.button(f"🗑️ Elimina {month_key}", key=f"del_{month_key}"):
@@ -464,31 +417,12 @@ with tab7:
 
 with tab8:
     st.subheader("💾 Salva, carica ed esporta i tuoi dati")
-    st.info("💾 I tuoi dati vengono salvati automaticamente ad ogni modifica")
+    st.info("💾 I tuoi dati principali sono salvati in modo permanente e privato nel tuo browser.")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("#### Salva budget corrente")
-        if st.button("💾 Salva ora", use_container_width=True):
-            filepath = data_manager.save_budget({"entrate": inputs["entrate"], "spese": inputs["spese"], "tasso": inputs["tasso"], "anni": inputs["anni"], "capitale_iniziale": inputs["capitale_iniziale"], "timestamp": datetime.now().isoformat()})
-            st.success(f"✅ Salvato in {filepath}")
-    
-    with col2:
-        st.markdown("#### Carica budget salvato")
-        saved_files = data_manager.list_saved_budgets()
-        if saved_files:
-            selected_file = st.selectbox("Seleziona file", saved_files)
-            if st.button("📂 Carica", use_container_width=True):
-                loaded_data = data_manager.load_budget(f"data/{selected_file}")
-                AutoStorage.auto_save_current({"entrate": loaded_data["entrate"], "spese": loaded_data["spese"], "tasso": loaded_data["tasso"], "anni": loaded_data["anni"], "capitale_iniziale": loaded_data["capitale_iniziale"]})
-                st.success("✅ Dati caricati! Ricarica la pagina per vederli applicati.")
-                st.rerun()
-        else:
-            st.info("Nessun budget salvato trovato.")
-    
-    with col3:
-        st.markdown("#### Esporta/Importa CSV")
+        st.markdown("#### Backup manuale (CSV)")
         if st.button("📤 Esporta CSV", use_container_width=True):
             filepath = data_manager.export_to_csv({"entrate": inputs["entrate"], **{f"spesa_{k}": v for k, v in inputs["spese"].items()}, "tasso": inputs["tasso"], "anni": inputs["anni"], "capitale_iniziale": inputs["capitale_iniziale"]})
             st.success(f"✅ Esportato in {filepath}")
@@ -497,124 +431,84 @@ with tab8:
         if uploaded_file is not None:
             if st.button("📥 Importa", use_container_width=True):
                 temp_path = f"data/temp_import.csv"
-                with open(temp_path, "wb") as f:
-                    f.write(uploaded_file.getbuffer())
+                with open(temp_path, "wb") as f: f.write(uploaded_file.getbuffer())
                 imported_data = data_manager.import_from_csv(temp_path)
                 AutoStorage.auto_save_current({"entrate": imported_data.get("entrate", 2000.0), "spese": {k.replace("spesa_", ""): v for k, v in imported_data.items() if k.startswith("spesa_")}, "tasso": imported_data.get("tasso", 0.05), "anni": imported_data.get("anni", 10), "capitale_iniziale": imported_data.get("capitale_iniziale", 0.0)})
-                st.success("✅ Dati importati! Ricarica la pagina per vederli applicati.")
+                st.success("✅ Dati importati!")
                 st.rerun()
     
-    st.markdown("---")
-    
-    st.markdown("#### 📄 Esporta Report PDF")
-    st.markdown("Scarica un report completo del tuo piano finanziario")
-    
-    if st.button("📄 Genera Report PDF", use_container_width=True, type="primary"):
-        try:
-            pdf = FPDF()
-            pdf.add_page()
-            
-            pdf.set_font("Helvetica", "B", 24)
-            pdf.set_text_color(184, 134, 11)
-            pdf.cell(0, 15, "CoinPilot - Report Finanziario", ln=True, align="C")
-            pdf.ln(5)
-            
-            pdf.set_font("Helvetica", "", 10)
-            pdf.set_text_color(100, 100, 100)
-            pdf.cell(0, 8, f"Generato il {datetime.now().strftime('%d/%m/%Y alle %H:%M')}", ln=True, align="C")
-            pdf.ln(10)
-            
-            pdf.set_font("Helvetica", "B", 16)
-            pdf.set_text_color(44, 62, 80)
-            pdf.cell(0, 12, "1. RIEPILOGO FINANZIARIO", ln=True)
-            pdf.ln(3)
-            
-            pdf.set_font("Helvetica", "", 11)
-            pdf.set_text_color(0, 0, 0)
-            pdf.cell(90, 8, "Entrate mensili:")
-            pdf.cell(0, 8, f"EUR {entrate:,.2f}", ln=True)
-            pdf.cell(90, 8, "Spese mensili totali:")
-            pdf.cell(0, 8, f"EUR {budget_data['totale_spese']:,.2f}", ln=True)
-            pdf.cell(90, 8, "Risparmio mensile:")
-            pdf.cell(0, 8, f"EUR {budget_data['risparmio_mensile']:,.2f}", ln=True)
-            pdf.cell(90, 8, "Risparmio annuo:")
-            pdf.cell(0, 8, f"EUR {budget_data['risparmio_annuo']:,.2f}", ln=True)
-            pdf.cell(90, 8, "Capitale iniziale:")
-            pdf.cell(0, 8, f"EUR {inputs['capitale_iniziale']:,.2f}", ln=True)
-            pdf.ln(8)
-            
-            pdf.set_font("Helvetica", "B", 16)
-            pdf.cell(0, 12, "2. PROIEZIONE A " + str(inputs["anni"]) + " ANNI", ln=True)
-            pdf.ln(3)
-            
-            pdf.set_font("Helvetica", "", 11)
-            pdf.cell(90, 8, "Rendimento annuo stimato:")
-            pdf.cell(0, 8, f"{inputs['tasso']*100:.1f}%", ln=True)
-            pdf.cell(90, 8, "Capitale finale stimato:")
-            pdf.cell(0, 8, f"EUR {capitale_finale:,.2f}", ln=True)
-            pdf.cell(90, 8, "Interessi guadagnati:")
-            pdf.cell(0, 8, f"EUR {interessi_totali:,.2f}", ln=True)
-            pdf.ln(8)
-            
-            spese_annuali_pdf = budget_data["totale_spese"] * 12
-            capitale_fire = spese_annuali_pdf / 0.04
-            
-            pdf.set_font("Helvetica", "B", 16)
-            pdf.cell(0, 12, "3. ANALISI FIRE (Indipendenza Finanziaria)", ln=True)
-            pdf.ln(3)
-            
-            pdf.set_font("Helvetica", "", 11)
-            pdf.cell(90, 8, "Numero FIRE (capitale necessario):")
-            pdf.cell(0, 8, f"EUR {capitale_fire:,.2f}", ln=True)
-            pdf.cell(90, 8, "Spese annuali:")
-            pdf.cell(0, 8, f"EUR {spese_annuali_pdf:,.2f}", ln=True)
-            pdf.ln(8)
-            
-            pdf.ln(10)
-            pdf.set_font("Helvetica", "I", 9)
-            pdf.set_text_color(150, 150, 150)
-            pdf.cell(0, 8, "Report generato da CoinPilot - Il tuo copilota per una finanza paziente", ln=True, align="C")
-            pdf.cell(0, 8, "Ispirato a 'L'Arte della Pazienza Finanziaria' di Canio Tedesco", ln=True, align="C")
-            
-            pdf_path = "data/coinpilot_report.pdf"
-            pdf.output(pdf_path)
-            
-            with open(pdf_path, "rb") as f:
-                st.download_button(
-                    label="⬇️ Scarica il tuo Report PDF",
-                    data=f,
-                    file_name="CoinPilot_Report.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-            
-            st.success("✅ Report PDF generato con successo!")
-            
-        except Exception as e:
-            st.error(f"Errore nella generazione del PDF: {str(e)}")
-    
-    st.markdown("---")
-    st.markdown("#### Elimina budget salvati")
-    if saved_files:
-        file_to_delete = st.selectbox("Seleziona file da eliminare", saved_files, key="delete_select")
-        if st.button("🗑️ Elimina", use_container_width=True):
-            if data_manager.delete_budget(file_to_delete):
-                st.success(f"✅ Eliminato {file_to_delete}")
-                st.rerun()
-    
-    st.markdown("---")
-    st.markdown("#### Reset dati")
-    if st.button("🔄 Resetta all'ultima sessione", use_container_width=True):
-        AutoStorage.clear_last_session()
-        st.success("✅ Dati resettati! Ricarica la pagina per usare i valori di default.")
-        st.rerun()
-    
-    st.markdown("---")
-    st.markdown("#### Mostra di nuovo la schermata di benvenuto")
-    if st.button("👋 Rivedi welcome page", use_container_width=True):
-        WelcomeScreen.reset_welcome()
-        st.success("✅ Welcome page resettata! Ricarica la pagina per vederla di nuovo.")
-        st.rerun()
+    with col2:
+        st.markdown("#### 📄 Esporta Report PDF")
+        if st.button("📄 Genera Report PDF", use_container_width=True, type="primary"):
+            try:
+                pdf = FPDF()
+                pdf.add_page()
+                pdf.set_font("Helvetica", "B", 24)
+                pdf.set_text_color(184, 134, 11)
+                pdf.cell(0, 15, "CoinPilot - Report Finanziario", ln=True, align="C")
+                pdf.ln(5)
+                pdf.set_font("Helvetica", "", 10)
+                pdf.set_text_color(100, 100, 100)
+                pdf.cell(0, 8, f"Generato il {datetime.now().strftime('%d/%m/%Y alle %H:%M')}", ln=True, align="C")
+                pdf.ln(10)
+                
+                pdf.set_font("Helvetica", "B", 16)
+                pdf.set_text_color(44, 62, 80)
+                pdf.cell(0, 12, "1. RIEPILOGO FINANZIARIO", ln=True)
+                pdf.ln(3)
+                pdf.set_font("Helvetica", "", 11)
+                pdf.set_text_color(0, 0, 0)
+                pdf.cell(90, 8, "Entrate mensili:"); pdf.cell(0, 8, f"EUR {entrate:,.2f}", ln=True)
+                pdf.cell(90, 8, "Spese mensili totali:"); pdf.cell(0, 8, f"EUR {budget_data['totale_spese']:,.2f}", ln=True)
+                pdf.cell(90, 8, "Risparmio mensile:"); pdf.cell(0, 8, f"EUR {budget_data['risparmio_mensile']:,.2f}", ln=True)
+                pdf.cell(90, 8, "Capitale iniziale:"); pdf.cell(0, 8, f"EUR {inputs['capitale_iniziale']:,.2f}", ln=True)
+                pdf.ln(8)
+                
+                pdf.set_font("Helvetica", "B", 16)
+                pdf.cell(0, 12, "2. PROIEZIONE A " + str(inputs["anni"]) + " ANNI", ln=True)
+                pdf.ln(3)
+                pdf.set_font("Helvetica", "", 11)
+                pdf.cell(90, 8, "Rendimento annuo stimato:"); pdf.cell(0, 8, f"{inputs['tasso']*100:.1f}%", ln=True)
+                pdf.cell(90, 8, "Capitale finale stimato:"); pdf.cell(0, 8, f"EUR {capitale_finale:,.2f}", ln=True)
+                pdf.cell(90, 8, "Interessi guadagnati:"); pdf.cell(0, 8, f"EUR {interessi_totali:,.2f}", ln=True)
+                pdf.ln(8)
+                
+                spese_annuali_pdf = budget_data["totale_spese"] * 12
+                capitale_fire = spese_annuali_pdf / 0.04
+                pdf.set_font("Helvetica", "B", 16)
+                pdf.cell(0, 12, "3. ANALISI FIRE (Indipendenza Finanziaria)", ln=True)
+                pdf.ln(3)
+                pdf.set_font("Helvetica", "", 11)
+                pdf.cell(90, 8, "Numero FIRE (capitale necessario):"); pdf.cell(0, 8, f"EUR {capitale_fire:,.2f}", ln=True)
+                pdf.cell(90, 8, "Spese annuali:"); pdf.cell(0, 8, f"EUR {spese_annuali_pdf:,.2f}", ln=True)
+                
+                pdf.ln(10)
+                pdf.set_font("Helvetica", "I", 9)
+                pdf.set_text_color(150, 150, 150)
+                pdf.cell(0, 8, "Report generato da CoinPilot - Il tuo copilota per una finanza paziente", ln=True, align="C")
+                
+                pdf_path = "data/coinpilot_report.pdf"
+                pdf.output(pdf_path)
+                with open(pdf_path, "rb") as f:
+                    st.download_button(label="⬇️ Scarica il tuo Report PDF", data=f, file_name="CoinPilot_Report.pdf", mime="application/pdf", use_container_width=True)
+                st.success("✅ Report PDF generato con successo!")
+            except Exception as e:
+                st.error(f"Errore nella generazione del PDF: {str(e)}")
+
+    with col3:
+        st.markdown("#### ⚙️ Reset")
+        if st.button("🔄 Resetta Sessione", use_container_width=True):
+            AutoStorage.clear_last_session()
+            st.success("✅ Sessione resettata! Ricarica la pagina.")
+            st.rerun()
+        if st.button("🗑️ Cancella Cronologia", use_container_width=True):
+            HistoryManager.clear_history()
+            st.success("✅ Cronologia cancellata!")
+            st.rerun()
+        if st.button("👋 Rivedi Welcome Page", use_container_width=True):
+            WelcomeScreen.reset_welcome()
+            st.success("✅ Welcome page resettata!")
+            st.rerun()
 
 with tab9:
     ui.render_book_presentation()
