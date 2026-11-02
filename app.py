@@ -95,7 +95,7 @@ if saved_inputs:
     default_tasso = saved_inputs.get("tasso", 0.05)
     default_anni = saved_inputs.get("anni", 10)
     default_capitale = saved_inputs.get("capitale_iniziale", 0.0)
-    st.info("📂 Dati caricati dalla tua sessione")
+    st.info("📂 Dati caricati dall'ultima sessione")
 else:
     default_entrate = 2000.0
     default_spese = budget_manager.default_spese
@@ -321,9 +321,6 @@ with tab6:
         inflazione_annua=inflazione_annua
     )
 
-# ============================================================================
-# TAB 7: CRONOLOGIA MENSILE
-# ============================================================================
 with tab7:
     st.subheader("📅 Cronologia Mensile")
     st.markdown("Registra e monitora i tuoi dati finanziari mese per mese.")
@@ -423,7 +420,7 @@ with tab7:
 
 with tab8:
     st.subheader("💾 Salva, carica ed esporta i tuoi dati")
-    st.info("💾 I tuoi dati sono salvati separatamente per ogni sessione utente.")
+    st.info("💾 I tuoi dati vengono salvati automaticamente ad ogni modifica")
     
     col1, col2, col3 = st.columns(3)
     
