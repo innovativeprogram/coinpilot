@@ -1,13 +1,12 @@
 """
 Componenti UI riutilizzabili per Streamlit
 CoinPilot - Il tuo copilota per una finanza paziente
-Versione con Dark Mode, FIRE Calculator e Inflation Simulator
+Versione con Dark Mode funzionante
 """
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
-import numpy as np
 
 
 class UIComponents:
@@ -20,15 +19,131 @@ class UIComponents:
     COLOR_NEUTRAL = "#95A5A6"
     COLOR_MILESTONE = "#F39C12"
 
+    # CSS per tema scuro - iniettato dinamicamente
+    DARK_MODE_CSS = """
+    <style>
+    /* Sfondo principale */
+    .stApp {
+        background-color: #1a1a2e !important;
+        color: #eaeaea !important;
+    }
+    
+    /* Header e titoli */
+    .stApp h1, .stApp h2, .stApp h3, .stApp h4 {
+        color: #eaeaea !important;
+    }
+    
+    /* Sidebar */
+    section[data-testid="stSidebar"] {
+        background-color: #16213e !important;
+    }
+    section[data-testid="stSidebar"] h1, 
+    section[data-testid="stSidebar"] h2, 
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] label {
+        color: #eaeaea !important;
+    }
+    
+    /* Card metriche */
+    div[data-testid="stMetric"] {
+        background-color: #0f3460 !important;
+        border: 1px solid #2a2a4a !important;
+    }
+    div[data-testid="stMetric"] label {
+        color: #b0b0b0 !important;
+    }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        color: #eaeaea !important;
+    }
+    
+    /* Input e number input */
+    .stNumberInput input, .stTextInput input, .stTextArea textarea {
+        background-color: #0f3460 !important;
+        color: #eaeaea !important;
+        border-color: #2a2a4a !important;
+    }
+    
+    /* Slider */
+    .stSlider label {
+        color: #eaeaea !important;
+    }
+    
+    /* Tabs */
+    button[data-baseweb="tab"] {
+        color: #b0b0b0 !important;
+        background-color: #16213e !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #B8860B !important;
+        background-color: #0f3460 !important;
+    }
+    
+    /* Expander */
+    .streamlit-expanderHeader {
+        background-color: #0f3460 !important;
+        color: #eaeaea !important;
+    }
+    
+    /* Alert e messaggi */
+    .stAlert {
+        background-color: #0f3460 !important;
+        color: #eaeaea !important;
+    }
+    
+    /* DataFrame */
+    .stDataFrame {
+        background-color: #0f3460 !important;
+    }
+    
+    /* Pulsanti */
+    .stButton > button {
+        background-color: #0f3460 !important;
+        color: #eaeaea !important;
+        border-color: #B8860B !important;
+    }
+    
+    /* Selectbox */
+    .stSelectbox label {
+        color: #eaeaea !important;
+    }
+    
+    /* File uploader */
+    .stFileUploader label {
+        color: #eaeaea !important;
+    }
+    
+    /* Checkbox e radio */
+    .stCheckbox label, .stRadio label {
+        color: #eaeaea !important;
+    }
+    
+    /* Testo normale */
+    p, span, div {
+        color: #eaeaea !important;
+    }
+    
+    /* Link */
+    a {
+        color: #3498DB !important;
+    }
+    
+    /* Sfondo grafici Plotly */
+    .js-plotly-plot .plotly {
+        background-color: #0f3460 !important;
+    }
+    </style>
+    """
+
     # ------------------------------------------------------------------
     # DARK MODE TOGGLE
     # ------------------------------------------------------------------
     @staticmethod
     def render_dark_mode_toggle():
-        """Renderizza il pulsante per attivare/disattivare la dark mode"""
+        """Renderizza il toggle per attivare/disattivare la dark mode"""
         if "dark_mode" not in st.session_state:
             st.session_state["dark_mode"] = False
         
+        # Posiziona il toggle in alto a destra usando columns
         col1, col2 = st.columns([10, 1])
         with col2:
             dark_mode = st.toggle("🌙", value=st.session_state["dark_mode"], key="dark_mode_toggle")
@@ -40,16 +155,9 @@ class UIComponents:
 
     @staticmethod
     def apply_dark_mode(is_dark):
-        """Applica il tema scuro se attivo"""
+        """Applica il tema scuro iniettando CSS dinamico"""
         if is_dark:
-            st.markdown(
-                """
-                <script>
-                document.body.classList.add('dark-mode');
-                </script>
-                """,
-                unsafe_allow_html=True
-            )
+            st.markdown(UIComponents.DARK_MODE_CSS, unsafe_allow_html=True)
 
     # ------------------------------------------------------------------
     # HEADER E FOOTER
@@ -463,19 +571,15 @@ class UIComponents:
             st.link_button("🛒 Acquista su Amazon", "https://link.amazon/B07tC2LqG", use_container_width=True)
 
     # ------------------------------------------------------------------
-    # CALCOLATORE FIRE (NUOVO)
+    # CALCOLATORE FIRE
     # ------------------------------------------------------------------
     @staticmethod
     def render_fire_calculator(spese_annuali, capitale_attuale, risparmio_annuo, tasso_annuo):
-        """
-        Calcola quando l'utente può raggiungere l'indipendenza finanziaria
-        usando la Regola del 4%
-        """
+        """Calcola quando l'utente può raggiungere l'indipendenza finanziaria"""
         st.markdown("### 🔥 Calcolatore FIRE")
         st.markdown("*Financial Independence, Retire Early - La regola del 4%*")
         st.markdown("---")
         
-        # Capitale FIRE necessario
         capitale_fire = spese_annuali / 0.04
         
         st.markdown(f"#### 🎯 Il tuo numero FIRE: **€ {capitale_fire:,.0f}**")
@@ -487,7 +591,6 @@ class UIComponents:
         
         st.markdown("---")
         
-        # Calcola anni per raggiungere FIRE
         if risparmio_annuo > 0 and capitale_attuale < capitale_fire:
             anni_per_fire = 0
             capitale_simulato = capitale_attuale
@@ -505,7 +608,6 @@ class UIComponents:
                 f"raggiungerai la libertà finanziaria in **{anni_per_fire} anni**!"
             )
             
-            # Grafico percorso verso FIRE
             df_fire = pd.DataFrame({
                 "Anno": anni_list,
                 "Capitale": capitale_list
@@ -554,13 +656,13 @@ class UIComponents:
         )
 
     # ------------------------------------------------------------------
-    # SIMULATORE INFLAZIONE (NUOVO)
+    # SIMULATORE INFLAZIONE
     # ------------------------------------------------------------------
     @staticmethod
     def render_inflation_simulator(capitale_iniziale, risparmio_mensile, tasso_annuo, anni, inflazione_annua=0.025):
-        """
-        Simula l'effetto dell'inflazione sul potere d'acquisto
-        """
+        """Simula l'effetto dell'inflazione sul potere d'acquisto"""
+        import numpy as np
+        
         st.markdown("### 📉 Simulatore di Inflazione")
         st.markdown("*Quanto varranno davvero i tuoi soldi tra qualche anno?*")
         st.markdown("---")
@@ -569,14 +671,12 @@ class UIComponents:
         tasso_mensile = (1 + tasso_annuo) ** (1/12) - 1
         inflazione_mensile = (1 + inflazione_annua) ** (1/12) - 1
         
-        # Capitale nominale (senza inflazione)
         if risparmio_mensile > 0 and tasso_mensile > 0:
             capitale_nominale = (capitale_iniziale * (1 + tasso_mensile) ** mesi + 
                                 risparmio_mensile * (((1 + tasso_mensile) ** mesi - 1) / tasso_mensile))
         else:
             capitale_nominale = capitale_iniziale + risparmio_mensile * mesi
         
-        # Capitale reale (aggiustato per inflazione)
         fattore_inflazione = (1 + inflazione_mensile) ** mesi
         capitale_reale = capitale_nominale / fattore_inflazione
         
@@ -587,7 +687,6 @@ class UIComponents:
             "Potere d'acquisto (%)": (capitale_reale / capitale_nominale) * 100
         })
         
-        # Grafico comparativo
         fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=df_inflazione["Mese"],
@@ -612,7 +711,6 @@ class UIComponents:
         )
         st.plotly_chart(fig, use_container_width=True)
         
-        # Risultati finali
         capitale_finale_nominale = capitale_nominale[-1]
         capitale_finale_reale = capitale_reale[-1]
         perdita_potere = ((capitale_finale_nominale - capitale_finale_reale) / capitale_finale_nominale) * 100
@@ -651,3 +749,13 @@ class UIComponents:
             "Lasciare i soldi fermi sul conto corrente significa perdere potere d'acquisto ogni anno. "
             "Investire con un rendimento superiore all'inflazione è l'unico modo per preservare e far crescere la tua ricchezza reale."
         )
+
+    # ------------------------------------------------------------------
+    # UTILS
+    # ------------------------------------------------------------------
+    @staticmethod
+    def is_mobile():
+        """Rileva se l'utente sta usando un dispositivo mobile"""
+        if "is_mobile" not in st.session_state:
+            st.session_state["is_mobile"] = False
+        return st.session_state.get("is_mobile", False)
