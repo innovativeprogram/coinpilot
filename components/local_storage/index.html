@@ -17,21 +17,16 @@
             document.cookie = `${name}=${value};expires=${d.toUTCString()};path=/`;
         }
         
-        // Genera o recupera l'ID utente
         let userId = getCookie('coinpilot_user_id');
         if (!userId) {
             userId = Math.random().toString(36).substr(2, 12);
             setCookie('coinpilot_user_id', userId, 365);
         }
         
-        // Invia l'ID a Streamlit
         Streamlit.setComponentValue(userId);
-        
-        // Mantieni la comunicazione con Streamlit
         Streamlit.events.addEventListener(Streamlit.RENDER_EVENT, (event) => {
             Streamlit.setComponentValue(userId);
         });
-        
         Streamlit.setFrameHeight(0);
     </script>
 </body>
