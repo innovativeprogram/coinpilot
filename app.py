@@ -1,7 +1,7 @@
 """
 CoinPilot - Pianificatore Finanziario Personale
 Con Dark Mode, FIRE Calculator, Inflation Simulator, Export PDF, Quiz facoltativo, Glossario e Cronologia mensile
-Salvataggio dati permanente e privato tramite LocalStorage del browser
+Salvataggio dati separato per ogni utente tramite cookie del browser
 """
 import streamlit as st
 import pandas as pd
@@ -96,7 +96,7 @@ if saved_inputs:
     default_tasso = saved_inputs.get("tasso", 0.05)
     default_anni = saved_inputs.get("anni", 10)
     default_capitale = saved_inputs.get("capitale_iniziale", 0.0)
-    st.info("📂 Dati caricati dalla tua memoria locale")
+    st.info("📂 Dati caricati dalla tua sessione")
 else:
     default_entrate = 2000.0
     default_spese = budget_manager.default_spese
@@ -327,7 +327,7 @@ with tab6:
 # ============================================================================
 with tab7:
     st.subheader("📅 Cronologia Mensile")
-    st.markdown("Registra e monitora i tuoi dati finanziari mese per mese. I dati sono salvati in modo permanente nel tuo browser.")
+    st.markdown("Registra e monitora i tuoi dati finanziari mese per mese. I dati sono salvati separatamente per ogni utente.")
     st.markdown("---")
     
     col_form1, col_form2 = st.columns(2)
@@ -424,7 +424,7 @@ with tab7:
 
 with tab8:
     st.subheader("💾 Salva, carica ed esporta i tuoi dati")
-    st.info("💾 I tuoi dati principali sono salvati in modo permanente e privato nel tuo browser.")
+    st.info("💾 I tuoi dati sono salvati separatamente per ogni utente.")
     
     col1, col2, col3 = st.columns(3)
     
