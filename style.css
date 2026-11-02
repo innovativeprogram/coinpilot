@@ -1,18 +1,75 @@
-/* Stile moderno per CoinPilot - Versione Responsive */
+/* Stile moderno per CoinPilot - Versione Responsive con Dark Mode */
+
+/* === TEMA CHIARO (default) === */
+:root {
+    --bg-primary: #FAFAFA;
+    --bg-secondary: #F0F0F0;
+    --bg-card: #FFFFFF;
+    --text-primary: #2C3E50;
+    --text-secondary: #666666;
+    --border-color: #E0E0E0;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+/* === TEMA SCURO === */
+.dark-mode {
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-card: #0f3460;
+    --text-primary: #eaeaea;
+    --text-secondary: #b0b0b0;
+    --border-color: #2a2a4a;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode body {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+.dark-mode .stMetric {
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-mode .stButton > button {
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-mode .stTextInput input, .dark-mode .stNumberInput input {
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-mode .stTabs [data-baseweb="tab"] {
+    color: var(--text-primary) !important;
+}
+
+.dark-mode .js-plotly-plot {
+    background-color: var(--bg-card) !important;
+}
+
+.dark-mode [data-testid="stSidebar"] {
+    background-color: var(--bg-secondary) !important;
+}
 
 /* Card con ombra e bordi arrotondati */
 .stMetric {
-    background-color: white;
+    background-color: var(--bg-card);
     padding: 20px;
     border-radius: 15px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border: 1px solid #E0E0E0;
+    box-shadow: 0 4px 6px var(--shadow-color);
+    border: 1px solid var(--border-color);
 }
 
 /* Input fields più eleganti */
 .stTextInput input, .stNumberInput input {
     border-radius: 10px !important;
-    border: 2px solid #E0E0E0 !important;
+    border: 2px solid var(--border-color) !important;
     padding: 12px !important;
     font-size: 16px !important;
 }
@@ -34,7 +91,7 @@
 
 .stButton > button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 12px var(--shadow-color);
 }
 
 /* Tab più eleganti */
@@ -56,14 +113,9 @@
     font-size: 15px !important;
 }
 
-/* Sidebar più pulita */
-.css-1d391kg {
-    background-color: #F0F0F0;
-}
-
 /* Titoli più eleganti */
 h1, h2, h3 {
-    color: #2C3E50;
+    color: var(--text-primary);
     font-weight: 700;
 }
 
@@ -74,19 +126,39 @@ h1, h2, h3 {
 
 /* Grafici con sfondo bianco */
 .js-plotly-plot {
-    background-color: white !important;
+    background-color: var(--bg-card) !important;
     border-radius: 15px !important;
     padding: 15px !important;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 4px 6px var(--shadow-color) !important;
+}
+
+/* Pulsante Dark Mode */
+.dark-mode-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    background-color: #B8860B;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.dark-mode-toggle:hover {
+    transform: scale(1.1);
 }
 
 /* ============================================ */
 /* OTTIMIZZAZIONE MOBILE */
 /* ============================================ */
 
-/* Schermi piccoli (smartphone) */
 @media (max-width: 768px) {
-    /* Padding globale ridotto */
     .main .block-container {
         padding-left: 15px !important;
         padding-right: 15px !important;
@@ -94,102 +166,73 @@ h1, h2, h3 {
         padding-bottom: 20px !important;
     }
     
-    /* Metriche impilate verticalmente */
     .stMetric {
         padding: 15px !important;
         margin-bottom: 10px !important;
     }
     
-    /* Titoli più piccoli */
-    h1 {
-        font-size: 28px !important;
-    }
+    h1 { font-size: 28px !important; }
+    h2 { font-size: 22px !important; }
+    h3 { font-size: 18px !important; }
     
-    h2 {
-        font-size: 22px !important;
-    }
-    
-    h3 {
-        font-size: 18px !important;
-    }
-    
-    /* Input fields più grandi per touch */
     .stTextInput input, .stNumberInput input {
         font-size: 18px !important;
         padding: 14px !important;
     }
     
-    /* Pulsanti ancora più grandi */
     .stButton > button {
         padding: 16px 32px !important;
         font-size: 17px !important;
         width: 100% !important;
     }
     
-    /* Tab più compatti */
     .stTabs [data-baseweb="tab"] {
         padding: 10px 16px;
         font-size: 14px;
     }
     
-    /* Sidebar più compatta su mobile */
     section[data-testid="stSidebar"] {
         width: 85% !important;
     }
     
-    /* Alert più leggibili */
     .stAlert {
         font-size: 14px !important;
         padding: 12px !important;
     }
     
-    /* Grafici si adattano */
     .js-plotly-plot {
         padding: 10px !important;
     }
     
-    /* Colonne si impilano su mobile */
     [data-testid="column"] {
         margin-bottom: 15px !important;
     }
+    
+    .dark-mode-toggle {
+        width: 45px;
+        height: 45px;
+        font-size: 20px;
+        top: 10px;
+        right: 10px;
+    }
 }
 
-/* Schermi molto piccoli (smartphone piccoli) */
 @media (max-width: 480px) {
-    h1 {
-        font-size: 24px !important;
-    }
-    
-    h2 {
-        font-size: 20px !important;
-    }
-    
-    h3 {
-        font-size: 16px !important;
-    }
-    
-    .stMetric {
-        padding: 12px !important;
-    }
-    
-    .stButton > button {
-        font-size: 16px !important;
-    }
+    h1 { font-size: 24px !important; }
+    h2 { font-size: 20px !important; }
+    h3 { font-size: 16px !important; }
+    .stMetric { padding: 12px !important; }
+    .stButton > button { font-size: 16px !important; }
 }
 
-/* Landscape mode su mobile */
 @media (max-width: 768px) and (orientation: landscape) {
     .main .block-container {
         padding-top: 10px !important;
         padding-bottom: 10px !important;
     }
-    
-    h1 {
-        font-size: 24px !important;
-    }
+    h1 { font-size: 24px !important; }
 }
 
-/* Tablet */
 @media (min-width: 769px) and (max-width: 1024px) {
     .main .block-container {
         padding-left: 30px !important;
