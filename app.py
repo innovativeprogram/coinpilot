@@ -1,7 +1,7 @@
 """
 CoinPilot - Pianificatore Finanziario Personale
 Entry point principale dell'applicazione
-Con salvataggio automatico e ottimizzazione mobile
+Con schermata di benvenuto, salvataggio automatico e ottimizzazione mobile
 """
 import streamlit as st
 import pandas as pd
@@ -21,6 +21,7 @@ from modules.projections import FinancialProjections
 from modules.data_manager import DataManager
 from modules.ui_components import UIComponents
 from modules.storage import AutoStorage
+from modules.welcome import WelcomeScreen
 
 # Configurazione pagina
 st.set_page_config(
@@ -34,6 +35,17 @@ budget_manager = BudgetManager()
 projections = FinancialProjections()
 data_manager = DataManager()
 ui = UIComponents()
+
+# ============================================================================
+# SCHERMATA DI BENVENUTO
+# ============================================================================
+if WelcomeScreen.should_show_welcome():
+    WelcomeScreen.render()
+    st.stop()  # Ferma l'esecuzione qui, non carica il resto dell'app
+
+# ============================================================================
+# APP PRINCIPALE (dopo la welcome)
+# ============================================================================
 
 # Inizializza salvataggio automatico
 AutoStorage.init_auto_save()
@@ -399,6 +411,14 @@ with tab5:
     if st.button("🔄 Resetta all'ultima sessione", use_container_width=True):
         AutoStorage.clear_last_session()
         st.success("✅ Dati resettati! Ricarica la pagina per usare i valori di default.")
+        st.rerun()
+    
+    # RESET WELCOME
+    st.markdown("---")
+    st.markdown("#### Mostra di nuovo la schermata di benvenuto")
+    if st.button("👋 Rivedi welcome page", use_container_width=True):
+        WelcomeScreen.reset_welcome()
+        st.success("✅ Welcome page resettata! Ricarica la pagina per vederla di nuovo.")
         st.rerun()
 
 # Renderizza footer
