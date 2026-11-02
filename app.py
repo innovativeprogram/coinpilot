@@ -1,7 +1,7 @@
 """
 CoinPilot - Pianificatore Finanziario Personale
 Entry point principale dell'applicazione
-Con salvataggio automatico dei dati
+Con salvataggio automatico e ottimizzazione mobile
 """
 import streamlit as st
 import pandas as pd
@@ -44,12 +44,24 @@ saved_inputs = st.session_state.get("auto_save_inputs", None)
 # Renderizza header
 ui.render_header()
 
+# Messaggio informativo per mobile
+st.markdown(
+    """
+    <div style="background-color: #FFF3CD; border-left: 4px solid #B8860B; 
+                padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+        <strong>📱 Suggerimento:</strong> Tocca il menu <strong>☰</strong> in alto a sinistra 
+        per inserire i tuoi dati finanziari.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 # Renderizza sidebar e ottieni input (con valori salvati se esistono)
 if saved_inputs:
     # Usa i dati salvati come valori di default
     default_entrate = saved_inputs.get("entrate", 2000.0)
     default_spese = saved_inputs.get("spese", budget_manager.default_spese)
-    default_tasso = saved_inputs.get("tasso", 5.0) / 100  # Converti da percentuale a decimale
+    default_tasso = saved_inputs.get("tasso", 5.0) / 100
     default_anni = saved_inputs.get("anni", 10)
     default_capitale = saved_inputs.get("capitale_iniziale", 0.0)
     
@@ -88,7 +100,7 @@ tasso = st.sidebar.slider(
     "Rendimento annuo stimato (%)",
     min_value=0.0,
     max_value=15.0,
-    value=float(default_tasso * 100),  # Converti da decimale a percentuale
+    value=float(default_tasso * 100),
     step=0.1
 ) / 100
 
@@ -123,6 +135,19 @@ budget_data = budget_manager.calculate_budget(
     inputs["entrate"], 
     inputs["spese"]
 )
+
+# Riepilogo rapido (utile su mobile per vedere i dati senza aprire la sidebar)
+with st.expander("📋 Riepilogo dati correnti", expanded=False):
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Entrate", f"€ {entrate:,.0f}")
+        st.metric("Capitale iniziale", f"€ {capitale_iniziale:,.0f}")
+    with col2:
+        st.metric("Spese totali", f"€ {budget_data['totale_spese']:,.0f}")
+        st.metric("Tasso annuo", f"{inputs['tasso']*100:.1f}%")
+    with col3:
+        st.metric("Risparmio mensile", f"€ {budget_data['risparmio_mensile']:,.0f}")
+        st.metric("Orizzonte", f"{anni} anni")
 
 # --- TABS principali ---
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
