@@ -199,7 +199,7 @@ class UIComponents:
         st.plotly_chart(fig, use_container_width=True)
 
     # ------------------------------------------------------------------
-    # GRAFICO MULTI-SCENARIO (NUOVO)
+    # GRAFICO MULTI-SCENARIO
     # ------------------------------------------------------------------
     @staticmethod
     def render_multi_scenario_chart(df_multi, milestones=None):
@@ -317,4 +317,86 @@ class UIComponents:
             }),
             use_container_width=True,
             hide_index=True
+        )
+
+    # ------------------------------------------------------------------
+    # TIMELINE OBIETTIVI (NUOVO)
+    # ------------------------------------------------------------------
+    @staticmethod
+    def render_goal_timeline(timeline, obiettivo):
+        """
+        Renderizza una timeline visuale con tappe intermedie verso l'obiettivo
+        timeline: lista di dict con chiave 'percentuale', 'obiettivo_tappa', 'mesi', 'anni'
+        """
+        if not timeline:
+            st.info("Nessuna tappa calcolata.")
+            return
+
+        # Barra di progresso principale
+        st.markdown("#### 📊 Progresso verso l'obiettivo")
+        
+        # Crea una barra di progresso HTML personalizzata
+        progress_html = """
+        <div style="background-color: #f0f0f0; border-radius: 10px; padding: 5px; margin: 20px 0;">
+            <div style="background: linear-gradient(90deg, {color_start} 0%, {color_end} 100%); 
+                        height: 30px; border-radius: 8px; 
+                        display: flex; align-items: center; justify-content: center;
+                        color: white; font-weight: bold; font-size: 14px;">
+                {progress_text}
+            </div>
+        </div>
+        """.format(
+            color_start=UIComponents.COLOR_PRIMARY,
+            color_end=UIComponents.COLOR_SUCCESS,
+            progress_text=f"Obiettivo: € {obiettivo:,.0f}"
+        )
+        st.markdown(progress_html, unsafe_allow_html=True)
+
+        # Timeline con tappe
+        st.markdown("#### 🎯 Tappe intermedie")
+        
+        cols = st.columns(len(timeline))
+        
+        for i, tappa in enumerate(timeline):
+            with cols[i]:
+                # Icona in base alla percentuale
+                if tappa["percentuale"] == 1.0:
+                    icon = "🏆"
+                    color = UIComponents.COLOR_MILESTONE
+                elif tappa["percentuale"] >= 0.75:
+                    icon = "🎯"
+                    color = UIComponents.COLOR_SUCCESS
+                elif tappa["percentuale"] >= 0.5:
+                    icon = "⭐"
+                    color = UIComponents.COLOR_INFO
+                else:
+                    icon = "📍"
+                    color = UIComponents.COLOR_NEUTRAL
+
+                # Card della tappa
+                card_html = f"""
+                <div style="background-color: white; border: 2px solid {color}; 
+                            border-radius: 15px; padding: 15px; text-align: center;
+                            box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div style="font-size: 32px; margin-bottom: 10px;">{icon}</div>
+                    <div style="font-size: 18px; font-weight: bold; color: {color}; 
+                                margin-bottom: 5px;">
+                        {tappa['percentuale']*100:.0f}%
+                    </div>
+                    <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                        € {tappa['obiettivo_tappa']:,.0f}
+                    </div>
+                    <div style="font-size: 12px; color: #999;">
+                        {tappa['anni']:.1f} anni<br>
+                        ({tappa['mesi']} mesi)
+                    </div>
+                </div>
+                """
+                st.markdown(card_html, unsafe_allow_html=True)
+
+        # Messaggio motivazionale
+        st.markdown("---")
+        st.success(
+            f"💪 Mantieni la costanza! Con il tuo risparmio mensile, "
+            f"raggiungerai **€ {obiettivo:,.0f}** in **{timeline[-1]['anni']:.1f} anni**."
         )
