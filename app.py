@@ -82,7 +82,7 @@ with tab2:
         st.subheader("Entrate vs Spese")
         ui.render_bar_chart(budget_data)
 
-# --- TAB 3: Proiezione ---
+# --- TAB 3: Proiezione (AGGIORNATA CON MULTI-SCENARIO) ---
 with tab3:
     st.subheader("🎯 Proiezione del capitale nel tempo")
     st.markdown(
@@ -92,6 +92,21 @@ with tab3:
         f"ecco la proiezione a **{inputs['anni']} anni**:"
     )
     
+    # Calcolo multi-scenario (nuovo!)
+    df_multi = projections.calculate_multi_scenario(
+        inputs["capitale_iniziale"],
+        budget_data["risparmio_mensile"],
+        inputs["tasso"],
+        inputs["anni"]
+    )
+    
+    # Trova traguardi importanti
+    milestones = projections.find_milestones(df_multi)
+    
+    # Grafico interattivo con 3 scenari
+    ui.render_multi_scenario_chart(df_multi, milestones)
+    
+    # Tabella annuale (scenario realistico)
     df_proiezione, df_annuale = projections.calculate_projection(
         inputs["capitale_iniziale"],
         budget_data["risparmio_mensile"],
@@ -99,29 +114,10 @@ with tab3:
         inputs["anni"]
     )
     
-    col_a, col_b = st.columns(2)
+    st.markdown("#### 📋 Dettaglio annuale")
+    ui.render_annual_table(df_annuale)
     
-    with col_a:
-        fig_line = px.line(
-            df_proiezione,
-            x="Mese", y="Capitale",
-            title="Crescita del capitale"
-        )
-        fig_line.update_layout(yaxis_title="Capitale (€)", xaxis_title="Mesi")
-        st.plotly_chart(fig_line, use_container_width=True)
-    
-    with col_b:
-        st.dataframe(
-            df_annuale[["Anno", "Capitale", "Versato", "Interessi"]]
-            .style.format({
-                "Capitale": "€ {:,.2f}",
-                "Versato": "€ {:,.2f}",
-                "Interessi": "€ {:,.2f}"
-            }),
-            use_container_width=True,
-            hide_index=True
-        )
-    
+    # Riepilogo finale
     capitale_finale = df_proiezione["Capitale"].iloc[-1]
     interessi_totali = capitale_finale - (inputs["capitale_iniziale"] + 
                                           budget_data["risparmio_mensile"] * inputs["anni"] * 12)
@@ -130,6 +126,18 @@ with tab3:
         f"💡 Dopo {inputs['anni']} anni avrai: **€ {capitale_finale:,.2f}** "
         f"(di cui **€ {interessi_totali:,.2f}** di interessi guadagnati)."
     )
+    
+    # Mostra traguardi raggiunti
+    if milestones:
+        st.markdown("#### 🏆 Traguardi raggiunti")
+        cols = st.columns(len(milestones))
+        for i, milestone in enumerate(milestones):
+            with cols[i]:
+                st.metric(
+                    label=f"Anno {milestone['anno']:.1f}",
+                    value=f"€ {milestone['traguardo']:,.0f}",
+                    delta=f"Mese {milestone['mese']}"
+                )
 
 # --- TAB 4: Obiettivi ---
 with tab4:
