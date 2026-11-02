@@ -1,0 +1,77 @@
+/* Stile moderno per CoinPilot */
+
+/* Card con ombra e bordi arrotondati */
+.stMetric {
+    background-color: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #E0E0E0;
+}
+
+/* Input fields più eleganti */
+.stTextInput input, .stNumberInput input {
+    border-radius: 10px !important;
+    border: 2px solid #E0E0E0 !important;
+    padding: 12px !important;
+    font-size: 16px !important;
+}
+
+.stTextInput input:focus, .stNumberInput input:focus {
+    border-color: #B8860B !important;
+    box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.1) !important;
+}
+
+/* Pulsanti con stile */
+.stButton > button {
+    border-radius: 10px !important;
+    padding: 12px 24px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Tab più eleganti */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 10px;
+}
+
+.stTabs [data-baseweb="tab"] {
+    padding: 10px 20px;
+    border-radius: 10px 10px 0 0;
+    font-weight: 600;
+}
+
+/* Success/Warning/Error messages più eleganti */
+.stAlert {
+    border-radius: 10px !important;
+    border-left-width: 4px !important;
+}
+
+/* Sidebar più pulita */
+.css-1d391kg {
+    background-color: #F0F0F0;
+}
+
+/* Titoli più eleganti */
+h1, h2, h3 {
+    color: #2C3E50;
+    font-weight: 700;
+}
+
+/* Slider più eleganti */
+.stSlider > div > div > div > div {
+    background-color: #B8860B !important;
+}
+
+/* Grafici con sfondo bianco */
+.js-plotly-plot {
+    background-color: white !important;
+    border-radius: 15px !important;
+    padding: 15px !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
