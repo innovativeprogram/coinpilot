@@ -12,12 +12,12 @@ class HistoryManager:
     
     @staticmethod
     def load_history():
-        """Carica la cronologia salvata nel browser"""
+        """Carica la cronologia salvata"""
         return AutoStorage.load_history()
     
     @staticmethod
     def save_history(history_data):
-        """Salva la cronologia nel browser"""
+        """Salva la cronologia"""
         AutoStorage.save_history(history_data)
     
     @staticmethod
@@ -67,4 +67,4 @@ class HistoryManager:
     @staticmethod
     def clear_history():
         """Cancella tutta la cronologia"""
-        AutoStorage._storage.removeItem(AutoStorage.HISTORY_KEY)
+        AutoStorage.clear_history()
