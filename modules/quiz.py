@@ -130,6 +130,7 @@ class FinancialQuiz:
             
             if st.button("💾 Salva il mio profilo", type="primary", use_container_width=True):
                 FinancialQuiz.complete_quiz(profile, total_score)
+                st.session_state["show_quiz"] = False
                 st.success(f"✅ Profilo salvato: {profile}")
                 st.rerun()
         else:
