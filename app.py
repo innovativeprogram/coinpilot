@@ -273,9 +273,9 @@ with tab4:
     obiettivo = st.number_input("Quanto vuoi risparmiare? (€)", min_value=0.0, value=10000.0, step=500.0, format="%.2f")
     
     if budget_data["risparmio_mensile"] > 0 and obiettivo > inputs["capitale_iniziale"]:
-        timeline = projections.calculate_goal_timeline(objetivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
+        timeline = projections.calculate_goal_timeline(obiettivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
         ui.render_goal_timeline(timeline, obiettivo)
-        mesi, anni_obj = projections.calculate_months_to_goal(objetivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
+        mesi, anni_obj = projections.calculate_months_to_goal(obiettivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
         st.success(f"🎉 Raggiungerai **€ {obiettivo:,.2f}** in circa **{anni_obj:.1f} anni** ({mesi} mesi).")
         st.info("💡 *Ricorda: la costanza batte l'intensità. Piccoli risparmi mensili, moltiplicati dal tempo e dall'interesse composto, costruiscono la vera ricchezza.*")
     elif budget_data["risparmio_mensile"] <= 0:
