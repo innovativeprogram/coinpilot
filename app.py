@@ -1,12 +1,12 @@
 """
 CoinPilot - Pianificatore Finanziario Personale
-Entry point principale dell'applicazione
-Con schermata di benvenuto, salvataggio automatico, ottimizzazione mobile e sezione Libro
+Con Dark Mode, FIRE Calculator, Inflation Simulator e Export PDF
 """
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
+from fpdf import FPDF
 
 # Carica stile CSS personalizzato
 def load_css(file_name):
@@ -46,6 +46,10 @@ if WelcomeScreen.should_show_welcome():
 # ============================================================================
 # APP PRINCIPALE
 # ============================================================================
+
+# Applica Dark Mode se attiva
+is_dark = ui.render_dark_mode_toggle()
+ui.apply_dark_mode(is_dark)
 
 AutoStorage.init_auto_save()
 saved_inputs = st.session_state.get("auto_save_inputs", None)
@@ -123,11 +127,13 @@ with st.expander("📋 Riepilogo dati correnti", expanded=False):
         st.metric("Orizzonte", f"{anni} anni")
 
 # --- TABS principali ---
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "📈 Riepilogo", 
     "📊 Analisi Spese", 
     "🎯 Proiezione", 
     "🏆 Obiettivi",
+    "🔥 FIRE",
+    "📉 Inflazione",
     "💾 Dati",
     "📖 Il Libro"
 ])
@@ -180,10 +186,9 @@ with tab4:
     obiettivo = st.number_input("Quanto vuoi risparmiare? (€)", min_value=0.0, value=10000.0, step=500.0, format="%.2f")
     
     if budget_data["risparmio_mensile"] > 0 and obiettivo > inputs["capitale_iniziale"]:
-        # QUI SOTTO C'È SCRITTO ESATTAMENTE "obiettivo" CON DUE 'T'
-        timeline = projections.calculate_goal_timeline(obiettivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
+        timeline = projections.calculate_goal_timeline(objetivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
         ui.render_goal_timeline(timeline, obiettivo)
-        mesi, anni_obj = projections.calculate_months_to_goal(obiettivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
+        mesi, anni_obj = projections.calculate_months_to_goal(objetivo, inputs["capitale_iniziale"], budget_data["risparmio_mensile"], inputs["tasso"])
         st.success(f"🎉 Raggiungerai **€ {obiettivo:,.2f}** in circa **{anni_obj:.1f} anni** ({mesi} mesi).")
         st.info("💡 *Ricorda: la costanza batte l'intensità. Piccoli risparmi mensili, moltiplicati dal tempo e dall'interesse composto, costruiscono la vera ricchezza.*")
     elif budget_data["risparmio_mensile"] <= 0:
@@ -192,9 +197,43 @@ with tab4:
     else:
         st.info("L'obiettivo è inferiore al capitale iniziale: l'hai già raggiunto! 🎉")
 
+# --- TAB 5: FIRE CALCULATOR (NUOVA) ---
 with tab5:
+    spese_annuali = budget_data["totale_spese"] * 12
+    risparmio_annuo = budget_data["risparmio_mensile"] * 12
+    
+    ui.render_fire_calculator(
+        spese_annuali=spese_annuali,
+        capitale_attuale=inputs["capitale_iniziale"],
+        risparmio_annuo=risparmio_annuo,
+        tasso_annuo=inputs["tasso"]
+    )
+
+# --- TAB 6: INFLAZIONE (NUOVA) ---
+with tab6:
+    inflazione_annua = st.number_input(
+        "Tasso di inflazione annuo stimato (%)",
+        min_value=0.0,
+        max_value=10.0,
+        value=2.5,
+        step=0.1,
+        format="%.1f",
+        help="L'inflazione media in Europa è circa 2-3% annuo"
+    ) / 100
+    
+    ui.render_inflation_simulator(
+        capitale_iniziale=inputs["capitale_iniziale"],
+        risparmio_mensile=budget_data["risparmio_mensile"],
+        tasso_annuo=inputs["tasso"],
+        anni=inputs["anni"],
+        inflazione_annua=inflazione_annua
+    )
+
+# --- TAB 7: DATI ---
+with tab7:
     st.subheader("💾 Salva, carica ed esporta i tuoi dati")
     st.info("💾 I tuoi dati vengono salvati automaticamente ad ogni modifica")
+    
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -234,6 +273,104 @@ with tab5:
                 st.rerun()
     
     st.markdown("---")
+    
+    # EXPORT PDF (NUOVO)
+    st.markdown("#### 📄 Esporta Report PDF")
+    st.markdown("Scarica un report completo del tuo piano finanziario")
+    
+    if st.button("📄 Genera Report PDF", use_container_width=True, type="primary"):
+        try:
+            pdf = FPDF()
+            pdf.add_page()
+            
+            # Header
+            pdf.set_font("Helvetica", "B", 24)
+            pdf.set_text_color(184, 134, 11)
+            pdf.cell(0, 15, "CoinPilot - Report Finanziario", ln=True, align="C")
+            pdf.ln(5)
+            
+            # Data
+            pdf.set_font("Helvetica", "", 10)
+            pdf.set_text_color(100, 100, 100)
+            pdf.cell(0, 8, f"Generato il {datetime.now().strftime('%d/%m/%Y alle %H:%M')}", ln=True, align="C")
+            pdf.ln(10)
+            
+            # Sezione Riepilogo
+            pdf.set_font("Helvetica", "B", 16)
+            pdf.set_text_color(44, 62, 80)
+            pdf.cell(0, 12, "1. RIEPILOGO FINANZIARIO", ln=True)
+            pdf.ln(3)
+            
+            pdf.set_font("Helvetica", "", 11)
+            pdf.set_text_color(0, 0, 0)
+            pdf.cell(90, 8, "Entrate mensili:")
+            pdf.cell(0, 8, f"EUR {entrate:,.2f}", ln=True)
+            pdf.cell(90, 8, "Spese mensili totali:")
+            pdf.cell(0, 8, f"EUR {budget_data['totale_spese']:,.2f}", ln=True)
+            pdf.cell(90, 8, "Risparmio mensile:")
+            pdf.cell(0, 8, f"EUR {budget_data['risparmio_mensile']:,.2f}", ln=True)
+            pdf.cell(90, 8, "Risparmio annuo:")
+            pdf.cell(0, 8, f"EUR {budget_data['risparmio_annuo']:,.2f}", ln=True)
+            pdf.cell(90, 8, "Capitale iniziale:")
+            pdf.cell(0, 8, f"EUR {inputs['capitale_iniziale']:,.2f}", ln=True)
+            pdf.ln(8)
+            
+            # Sezione Proiezione
+            pdf.set_font("Helvetica", "B", 16)
+            pdf.cell(0, 12, "2. PROIEZIONE A " + str(inputs["anni"]) + " ANNI", ln=True)
+            pdf.ln(3)
+            
+            pdf.set_font("Helvetica", "", 11)
+            pdf.cell(90, 8, "Rendimento annuo stimato:")
+            pdf.cell(0, 8, f"{inputs['tasso']*100:.1f}%", ln=True)
+            pdf.cell(90, 8, "Capitale finale stimato:")
+            pdf.cell(0, 8, f"EUR {capitale_finale:,.2f}", ln=True)
+            pdf.cell(90, 8, "Interessi guadagnati:")
+            pdf.cell(0, 8, f"EUR {interessi_totali:,.2f}", ln=True)
+            pdf.ln(8)
+            
+            # Sezione FIRE
+            spese_annuali = budget_data["totale_spese"] * 12
+            capitale_fire = spese_annuali / 0.04
+            
+            pdf.set_font("Helvetica", "B", 16)
+            pdf.cell(0, 12, "3. ANALISI FIRE (Indipendenza Finanziaria)", ln=True)
+            pdf.ln(3)
+            
+            pdf.set_font("Helvetica", "", 11)
+            pdf.cell(90, 8, "Numero FIRE (capitale necessario):")
+            pdf.cell(0, 8, f"EUR {capitale_fire:,.2f}", ln=True)
+            pdf.cell(90, 8, "Spese annuali:")
+            pdf.cell(0, 8, f"EUR {spese_annuali:,.2f}", ln=True)
+            pdf.ln(8)
+            
+            # Footer
+            pdf.ln(10)
+            pdf.set_font("Helvetica", "I", 9)
+            pdf.set_text_color(150, 150, 150)
+            pdf.cell(0, 8, "Report generato da CoinPilot - Il tuo copilota per una finanza paziente", ln=True, align="C")
+            pdf.cell(0, 8, "Ispirato a 'L'Arte della Pazienza Finanziaria' di Canio Tedesco", ln=True, align="C")
+            
+            # Salva PDF
+            pdf_path = "data/coinpilot_report.pdf"
+            pdf.output(pdf_path)
+            
+            # Offri il download
+            with open(pdf_path, "rb") as f:
+                st.download_button(
+                    label="⬇️ Scarica il tuo Report PDF",
+                    data=f,
+                    file_name="CoinPilot_Report.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+            
+            st.success("✅ Report PDF generato con successo!")
+            
+        except Exception as e:
+            st.error(f"Errore nella generazione del PDF: {str(e)}")
+    
+    st.markdown("---")
     st.markdown("#### Elimina budget salvati")
     if saved_files:
         file_to_delete = st.selectbox("Seleziona file da eliminare", saved_files, key="delete_select")
@@ -256,8 +393,8 @@ with tab5:
         st.success("✅ Welcome page resettata! Ricarica la pagina per vederla di nuovo.")
         st.rerun()
 
-# --- TAB 6: IL LIBRO ---
-with tab6:
+# --- TAB 8: IL LIBRO ---
+with tab8:
     ui.render_book_presentation()
 
 ui.render_footer()
