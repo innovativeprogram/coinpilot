@@ -1,48 +1,34 @@
 """
-Gestione salvataggio dati con separazione per utente
-Ogni sessione ha un ID univoco temporaneo
+Gestione salvataggio automatico dei dati
+CoinPilot - Il tuo copilota per una finanza paziente
 """
 import json
 import os
-import uuid
 import streamlit as st
 
 
 class AutoStorage:
-    """Gestisce il salvataggio automatico dei dati con separazione per utente"""
+    """Gestisce il salvataggio automatico dei dati"""
     
-    @staticmethod
-    def get_user_id():
-        """Restituisce un ID utente univoco per la sessione corrente"""
-        if "user_id" not in st.session_state:
-            st.session_state["user_id"] = str(uuid.uuid4())[:12]
-        return st.session_state["user_id"]
-    
-    @staticmethod
-    def get_user_file_path(filename):
-        """Restituisce il percorso del file specifico per l'utente"""
-        user_id = AutoStorage.get_user_id()
-        return f"data/user_{user_id}_{filename}"
+    LAST_SESSION_FILE = "data/last_session.json"
+    QUIZ_RESULTS_FILE = "data/quiz_results.json"
+    HISTORY_FILE = "data/history.json"
     
     @staticmethod
     def save_last_session(data_dict):
-        """Salva i dati correnti nel file specifico per l'utente"""
+        """Salva i dati correnti nell'ultima sessione"""
         os.makedirs("data", exist_ok=True)
-        filepath = AutoStorage.get_user_file_path("last_session.json")
-        
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(AutoStorage.LAST_SESSION_FILE, 'w', encoding='utf-8') as f:
             json.dump(data_dict, f, indent=2, ensure_ascii=False)
     
     @staticmethod
     def load_last_session():
-        """Carica i dati dal file specifico per l'utente"""
-        filepath = AutoStorage.get_user_file_path("last_session.json")
-        
-        if not os.path.exists(filepath):
+        """Carica i dati dall'ultima sessione salvata"""
+        if not os.path.exists(AutoStorage.LAST_SESSION_FILE):
             return None
         
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(AutoStorage.LAST_SESSION_FILE, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except (json.JSONDecodeError, IOError):
             return None
@@ -50,9 +36,8 @@ class AutoStorage:
     @staticmethod
     def clear_last_session():
         """Cancella i dati dell'ultima sessione"""
-        filepath = AutoStorage.get_user_file_path("last_session.json")
-        if os.path.exists(filepath):
-            os.remove(filepath)
+        if os.path.exists(AutoStorage.LAST_SESSION_FILE):
+            os.remove(AutoStorage.LAST_SESSION_FILE)
     
     @staticmethod
     def init_auto_save():
@@ -72,29 +57,24 @@ class AutoStorage:
     
     @staticmethod
     def save_quiz_results(profile_name, score):
-        """Salva i risultati del quiz nel file specifico per l'utente"""
+        """Salva i risultati del quiz"""
         os.makedirs("data", exist_ok=True)
-        filepath = AutoStorage.get_user_file_path("quiz_results.json")
-        
         quiz_data = {
             "profile": profile_name,
             "score": score,
             "timestamp": st.session_state.get("quiz_timestamp", None)
         }
-        
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(AutoStorage.QUIZ_RESULTS_FILE, 'w', encoding='utf-8') as f:
             json.dump(quiz_data, f, indent=2, ensure_ascii=False)
     
     @staticmethod
     def load_quiz_results():
-        """Carica i risultati del quiz dal file specifico per l'utente"""
-        filepath = AutoStorage.get_user_file_path("quiz_results.json")
-        
-        if not os.path.exists(filepath):
+        """Carica i risultati del quiz salvati"""
+        if not os.path.exists(AutoStorage.QUIZ_RESULTS_FILE):
             return None
         
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(AutoStorage.QUIZ_RESULTS_FILE, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except (json.JSONDecodeError, IOError):
             return None
@@ -102,29 +82,24 @@ class AutoStorage:
     @staticmethod
     def clear_quiz_results():
         """Cancella i risultati del quiz"""
-        filepath = AutoStorage.get_user_file_path("quiz_results.json")
-        if os.path.exists(filepath):
-            os.remove(filepath)
+        if os.path.exists(AutoStorage.QUIZ_RESULTS_FILE):
+            os.remove(AutoStorage.QUIZ_RESULTS_FILE)
     
     @staticmethod
     def save_history(history_data):
-        """Salva la cronologia nel file specifico per l'utente"""
+        """Salva la cronologia"""
         os.makedirs("data", exist_ok=True)
-        filepath = AutoStorage.get_user_file_path("history.json")
-        
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(AutoStorage.HISTORY_FILE, 'w', encoding='utf-8') as f:
             json.dump(history_data, f, indent=2, ensure_ascii=False)
     
     @staticmethod
     def load_history():
-        """Carica la cronologia dal file specifico per l'utente"""
-        filepath = AutoStorage.get_user_file_path("history.json")
-        
-        if not os.path.exists(filepath):
+        """Carica la cronologia"""
+        if not os.path.exists(AutoStorage.HISTORY_FILE):
             return {}
         
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(AutoStorage.HISTORY_FILE, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except (json.JSONDecodeError, IOError):
             return {}
@@ -132,6 +107,5 @@ class AutoStorage:
     @staticmethod
     def clear_history():
         """Cancella la cronologia"""
-        filepath = AutoStorage.get_user_file_path("history.json")
-        if os.path.exists(filepath):
-            os.remove(filepath)
+        if os.path.exists(AutoStorage.HISTORY_FILE):
+            os.remove(AutoStorage.HISTORY_FILE)
