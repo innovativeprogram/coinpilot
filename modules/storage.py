@@ -15,22 +15,31 @@ _user_id_component = components.declare_component(
 )
 
 
+def get_user_id_from_component():
+    """
+    Funzione globale che renderizza il componente e restituisce l'ID utente.
+    Deve essere chiamata all'inizio dell'app, prima di qualsiasi altra cosa.
+    """
+    if "user_id" not in st.session_state:
+        user_id = _user_id_component(key="user_id")
+        
+        if not user_id:
+            user_id = str(uuid.uuid4())[:12]
+        
+        st.session_state["user_id"] = user_id
+    
+    return st.session_state["user_id"]
+
+
 class AutoStorage:
     """Gestisce il salvataggio automatico dei dati con separazione per utente"""
     
     @staticmethod
     def get_user_id():
-        """Restituisce un ID utente univoco salvato in un cookie del browser"""
+        """Restituisce l'ID utente salvato in session_state"""
         if "user_id" not in st.session_state:
-            # Usa il componente custom per ottenere l'ID dal cookie
-            user_id = _user_id_component(key="user_id")
-            
-            if not user_id:
-                # Se il componente non ha ancora restituito un valore, genera un ID temporaneo
-                user_id = str(uuid.uuid4())[:12]
-            
-            st.session_state["user_id"] = user_id
-        
+            # Se non è stato ancora impostato, genera un ID temporaneo
+            st.session_state["user_id"] = str(uuid.uuid4())[:12]
         return st.session_state["user_id"]
     
     @staticmethod
