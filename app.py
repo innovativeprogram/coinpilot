@@ -7,6 +7,13 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime
 
+# Carica stile CSS personalizzato
+def load_css(file_name):
+    with open(file_name, "r", encoding="utf-8") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+load_css("style.css")
+
 # Import moduli personalizzati
 from modules.budget import BudgetManager
 from modules.projections import FinancialProjections
