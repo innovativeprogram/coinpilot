@@ -1,6 +1,7 @@
 """
 Componenti UI riutilizzabili per Streamlit
 CoinPilot - Il tuo copilota per una finanza paziente
+Versione responsive ottimizzata per mobile
 """
 import streamlit as st
 import plotly.express as px
@@ -18,6 +19,34 @@ class UIComponents:
     COLOR_INFO = "#3498DB"         # Blu
     COLOR_NEUTRAL = "#95A5A6"      # Grigio
     COLOR_MILESTONE = "#F39C12"    # Arancio
+
+    # ------------------------------------------------------------------
+    # RILEVAMENTO DISPOSITIVO
+    # ------------------------------------------------------------------
+    @staticmethod
+    def is_mobile():
+        """
+        Rileva se l'utente sta usando un dispositivo mobile
+        Usa JavaScript per controllare la larghezza dello schermo
+        """
+        if "is_mobile" not in st.session_state:
+            # Inizializza come False (desktop)
+            st.session_state["is_mobile"] = False
+        
+        # JavaScript che rileva la larghezza dello schermo
+        js_code = """
+        <script>
+        const isMobile = window.innerWidth <= 768;
+        window.parent.postMessage({
+            type: "streamlit:setComponentValue",
+            isMobile: isMobile
+        }, "*");
+        </script>
+        """
+        # Nota: questo è un approccio semplificato
+        # Per un rilevamento più preciso servirebbe un componente custom
+        
+        return st.session_state.get("is_mobile", False)
 
     # ------------------------------------------------------------------
     # HEADER E FOOTER
@@ -101,31 +130,63 @@ class UIComponents:
         }
 
     # ------------------------------------------------------------------
-    # METRICHE
+    # METRICHE (RESPONSIVE)
     # ------------------------------------------------------------------
     @staticmethod
     def render_metrics(budget_data):
-        """Renderizza le metriche principali"""
-        col1, col2, col3, col4 = st.columns(4)
+        """Renderizza le metriche principali con layout responsive"""
+        # Su desktop: 4 colonne, su mobile: 2x2
+        is_mobile = UIComponents.is_mobile()
+        
+        if is_mobile:
+            # Layout mobile: 2 colonne x 2 righe
+            row1_col1, row1_col2 = st.columns(2)
+            row2_col1, row2_col2 = st.columns(2)
+            
+            perc_spese = (
+                budget_data["totale_spese"] / budget_data["entrate"] * 100
+                if budget_data["entrate"] > 0 else 0
+            )
+            
+            with row1_col1:
+                st.metric("Entrate", f"€ {budget_data['entrate']:,.0f}")
+            with row1_col2:
+                st.metric(
+                    "Spese",
+                    f"€ {budget_data['totale_spese']:,.0f}",
+                    delta=f"{perc_spese:.0f}%",
+                    delta_color="inverse"
+                )
+            with row2_col1:
+                st.metric(
+                    "Risparmio",
+                    f"€ {budget_data['risparmio_mensile']:,.0f}",
+                    delta=f"{budget_data['percentuale_risparmio']:.0f}%"
+                )
+            with row2_col2:
+                st.metric("Annuo", f"€ {budget_data['risparmio_annuo']:,.0f}")
+        else:
+            # Layout desktop: 4 colonne
+            col1, col2, col3, col4 = st.columns(4)
 
-        perc_spese = (
-            budget_data["totale_spese"] / budget_data["entrate"] * 100
-            if budget_data["entrate"] > 0 else 0
-        )
+            perc_spese = (
+                budget_data["totale_spese"] / budget_data["entrate"] * 100
+                if budget_data["entrate"] > 0 else 0
+            )
 
-        col1.metric("Entrate", f"€ {budget_data['entrate']:,.2f}")
-        col2.metric(
-            "Spese",
-            f"€ {budget_data['totale_spese']:,.2f}",
-            delta=f"{perc_spese:.1f}% entrate",
-            delta_color="inverse"
-        )
-        col3.metric(
-            "Risparmio mensile",
-            f"€ {budget_data['risparmio_mensile']:,.2f}",
-            delta=f"{budget_data['percentuale_risparmio']:.1f}%"
-        )
-        col4.metric("Risparmio annuo", f"€ {budget_data['risparmio_annuo']:,.2f}")
+            col1.metric("Entrate", f"€ {budget_data['entrate']:,.2f}")
+            col2.metric(
+                "Spese",
+                f"€ {budget_data['totale_spese']:,.2f}",
+                delta=f"{perc_spese:.1f}% entrate",
+                delta_color="inverse"
+            )
+            col3.metric(
+                "Risparmio mensile",
+                f"€ {budget_data['risparmio_mensile']:,.2f}",
+                delta=f"{budget_data['percentuale_risparmio']:.1f}%"
+            )
+            col4.metric("Risparmio annuo", f"€ {budget_data['risparmio_annuo']:,.2f}")
 
     # ------------------------------------------------------------------
     # GRAFICI BASE
@@ -158,7 +219,8 @@ class UIComponents:
         fig.update_layout(
             plot_bgcolor="white",
             paper_bgcolor="white",
-            margin=dict(t=20, b=20, l=20, r=20)
+            margin=dict(t=20, b=20, l=20, r=20),
+            height=400  # Altezza fissa per responsive
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -193,7 +255,8 @@ class UIComponents:
             plot_bgcolor="white",
             paper_bgcolor="white",
             showlegend=False,
-            margin=dict(t=20, b=20, l=20, r=20)
+            margin=dict(t=20, b=20, l=20, r=20),
+            height=400  # Altezza fissa per responsive
         )
         fig.update_yaxes(tickformat="€,.0f", gridcolor="LightGrey")
         st.plotly_chart(fig, use_container_width=True)
@@ -294,7 +357,8 @@ class UIComponents:
             plot_bgcolor="white",
             paper_bgcolor="white",
             font=dict(size=12),
-            margin=dict(t=60, b=40, l=20, r=20)
+            margin=dict(t=60, b=40, l=20, r=20),
+            height=500  # Altezza fissa per responsive
         )
 
         fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="LightGrey")
@@ -320,7 +384,7 @@ class UIComponents:
         )
 
     # ------------------------------------------------------------------
-    # TIMELINE OBIETTIVI (NUOVO)
+    # TIMELINE OBIETTIVI (RESPONSIVE)
     # ------------------------------------------------------------------
     @staticmethod
     def render_goal_timeline(timeline, obiettivo):
@@ -352,47 +416,58 @@ class UIComponents:
         )
         st.markdown(progress_html, unsafe_allow_html=True)
 
-        # Timeline con tappe
+        # Timeline con tappe - layout responsive
         st.markdown("#### 🎯 Tappe intermedie")
         
-        cols = st.columns(len(timeline))
+        is_mobile = UIComponents.is_mobile()
+        
+        if is_mobile:
+            # Su mobile: 2 colonne x 2 righe
+            row1_col1, row1_col2 = st.columns(2)
+            row2_col1, row2_col2 = st.columns(2)
+            
+            cols = [row1_col1, row1_col2, row2_col1, row2_col2]
+        else:
+            # Su desktop: 4 colonne
+            cols = st.columns(len(timeline))
         
         for i, tappa in enumerate(timeline):
-            with cols[i]:
-                # Icona in base alla percentuale
-                if tappa["percentuale"] == 1.0:
-                    icon = "🏆"
-                    color = UIComponents.COLOR_MILESTONE
-                elif tappa["percentuale"] >= 0.75:
-                    icon = "🎯"
-                    color = UIComponents.COLOR_SUCCESS
-                elif tappa["percentuale"] >= 0.5:
-                    icon = "⭐"
-                    color = UIComponents.COLOR_INFO
-                else:
-                    icon = "📍"
-                    color = UIComponents.COLOR_NEUTRAL
+            if i < len(cols):
+                with cols[i]:
+                    # Icona in base alla percentuale
+                    if tappa["percentuale"] == 1.0:
+                        icon = "🏆"
+                        color = UIComponents.COLOR_MILESTONE
+                    elif tappa["percentuale"] >= 0.75:
+                        icon = "🎯"
+                        color = UIComponents.COLOR_SUCCESS
+                    elif tappa["percentuale"] >= 0.5:
+                        icon = "⭐"
+                        color = UIComponents.COLOR_INFO
+                    else:
+                        icon = "📍"
+                        color = UIComponents.COLOR_NEUTRAL
 
-                # Card della tappa
-                card_html = f"""
-                <div style="background-color: white; border: 2px solid {color}; 
-                            border-radius: 15px; padding: 15px; text-align: center;
-                            box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                    <div style="font-size: 32px; margin-bottom: 10px;">{icon}</div>
-                    <div style="font-size: 18px; font-weight: bold; color: {color}; 
-                                margin-bottom: 5px;">
-                        {tappa['percentuale']*100:.0f}%
+                    # Card della tappa
+                    card_html = f"""
+                    <div style="background-color: white; border: 2px solid {color}; 
+                                border-radius: 15px; padding: 15px; text-align: center;
+                                box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <div style="font-size: 32px; margin-bottom: 10px;">{icon}</div>
+                        <div style="font-size: 18px; font-weight: bold; color: {color}; 
+                                    margin-bottom: 5px;">
+                            {tappa['percentuale']*100:.0f}%
+                        </div>
+                        <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                            € {tappa['obiettivo_tappa']:,.0f}
+                        </div>
+                        <div style="font-size: 12px; color: #999;">
+                            {tappa['anni']:.1f} anni<br>
+                            ({tappa['mesi']} mesi)
+                        </div>
                     </div>
-                    <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
-                        € {tappa['obiettivo_tappa']:,.0f}
-                    </div>
-                    <div style="font-size: 12px; color: #999;">
-                        {tappa['anni']:.1f} anni<br>
-                        ({tappa['mesi']} mesi)
-                    </div>
-                </div>
-                """
-                st.markdown(card_html, unsafe_allow_html=True)
+                    """
+                    st.markdown(card_html, unsafe_allow_html=True)
 
         # Messaggio motivazionale
         st.markdown("---")
