@@ -36,23 +36,25 @@ class UIComponents:
         for categoria, default in budget_manager.default_spese.items():
             spese[categoria] = st.sidebar.number_input(
                 f"{categoria} (€)", 
-                0.0, 
-                default, 
-                10.0
+                min_value=0.0, 
+                value=float(default), 
+                step=10.0
             )
         
         st.sidebar.subheader("💼 Parametri investimento")
         tasso = st.sidebar.slider(
             "Rendimento annuo stimato (%)", 
-            0.0, 15.0, 5.0, 0.1
+            min_value=0.0, max_value=15.0, value=5.0, step=0.1
         ) / 100
         anni = st.sidebar.slider(
             "Orizzonte temporale (anni)", 
-            1, 40, 10
+            min_value=1, max_value=40, value=10
         )
         capitale_iniziale = st.sidebar.number_input(
             "Capitale iniziale (€)", 
-            0.0, 0.0, 100.0
+            min_value=0.0, 
+            value=0.0, 
+            step=100.0
         )
         
         return {
@@ -110,7 +112,7 @@ class UIComponents:
             "Importo (€)": [
                 budget_data["entrate"], 
                 budget_data["totale_spese"], 
-                max(budget_data["risparmio_mensile"], 0)
+                max(budget_data["risparmio_mensile"], 0.0)
             ]
         })
         
