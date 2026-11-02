@@ -1,0 +1,1 @@
+# Moduli di CoinPilot
